@@ -23,6 +23,7 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "publisher": "JamesK",
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
