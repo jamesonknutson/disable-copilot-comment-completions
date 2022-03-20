@@ -29,6 +29,6 @@ So far, so good (nothing).
 
 ## Release Notes
 
-### 1.0.0
+### 0.1.0
 
 Initial release. Fly, little angel, fly...
