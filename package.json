@@ -1,6 +1,6 @@
 {
   "name": "disable-copilot-comment-completions",
-  "displayName": "Disable Copilot Completions in Comments",
+  "displayName": "Disable Copilot Comment Suggestions",
   "description": "Stops Github Copilot from providing inline suggestions in the Editor when you are writing comments.",
   "version": "0.0.1",
   "engines": {
@@ -23,7 +23,7 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "publisher": "JamesK",
+  "publisher": "disable-copilot-comment-completions",
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
