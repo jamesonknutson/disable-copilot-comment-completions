@@ -2,7 +2,7 @@
   "name": "disable-copilot-comment-completions",
   "displayName": "Disable Copilot Comment Suggestions",
   "description": "Stops Github Copilot from providing inline suggestions in the Editor when you are writing comments.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.65.0"
