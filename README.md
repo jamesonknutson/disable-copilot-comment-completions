@@ -8,7 +8,7 @@ The Extension can be toggled on or off using the `disable-copilot-comment-comple
 
 This should work in all files and all languages, as long as the language conforms to standard TextMate symbol/syntax class names. If it doesn't work for you for some reason, make an issue on Github and I can try to fix it for you (or just fork it and fix it yourself, this extension is like 3 lines of code).
 
-\!\[Demonstration\]\(media/demo.mp4\) ([GfyCat link if the video doesn't work](https://gfycat.com/quaintplayfulharrierhawk))
+(Demonstration GIF)[https://user-images.githubusercontent.com/38028563/159189623-1fc1136b-206f-4f42-b206-43c37de6aa24.mp4] (GfyCat if it doesn't work: https://gfycat.com/quaintplayfulharrierhawk)
 
 ## Requirements
 
