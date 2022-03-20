@@ -1,0 +1,58 @@
+{
+  "name": "disable-copilot-comment-completions",
+  "displayName": "Disable Copilot Completions in Comments",
+  "description": "Stops Github Copilot from providing inline suggestions in the Editor when you are writing comments.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.65.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "disable-copilot-comment-completions.toggle",
+        "title": "GitHub Copilot: Toggle Inline Suggestions in Comments"
+      }
+    ],
+    "configuration": {
+      "title": "Disable Copilot Completions in Comments",
+      "properties": {
+        "disable-copilot-comment-completions.active": {
+          "type": "boolean",
+          "description": "Whether or not this Extension is enabled. If set to true, will disable Copilot's Inline Suggestions feature whenever you are typing a comment, then enable it whenever you're not.",
+          "default": true
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.0",
+    "@types/node": "14.x",
+    "@types/vscode": "^1.65.0",
+    "@typescript-eslint/eslint-plugin": "^5.12.1",
+    "@typescript-eslint/parser": "^5.12.1",
+    "@vscode/test-electron": "^2.1.2",
+    "eslint": "^8.9.0",
+    "glob": "^7.2.0",
+    "mocha": "^9.2.1",
+    "typescript": "^4.6.2"
+  },
+  "extensionDependencies": [
+    "draivin.hscopes"
+  ]
+}
