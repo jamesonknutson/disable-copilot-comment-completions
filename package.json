@@ -6,6 +6,16 @@
   "engines": {
     "vscode": "^1.65.0"
   },
+  "repository": {
+    "url": "https://github.com/jamesonknutson/disable-copilot-comment-completions"
+  },
+  "bugs": {
+    "url": "https://github.com/jamesonknutson/disable-copilot-comment-completions/issues"
+  },
+  "author": {
+    "name": "James K",
+    "url": "https://github.com/jamesonknutson"
+  },
   "categories": [
     "Other"
   ],
