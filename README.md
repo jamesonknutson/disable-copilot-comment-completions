@@ -1,3 +1,5 @@
+[VSCode Extension Marketplace Download](https://marketplace.visualstudio.com/items?itemName=disable-copilot-comment-completions.disable-copilot-comment-completions)
+
 ## Features
 
 Prevents Github Copilot from providing inline suggestions in comments (and anywhere else you might not want copilot to be providing suggestions).
