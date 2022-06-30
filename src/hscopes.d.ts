@@ -1,6 +1,6 @@
 // Yoinked from hscopes.draivin: https://github.com/draivin/hscopes
 
-import * as vscode from 'vscode';
+import * as vscode from 'vscode'
 
 /**
  * A grammar

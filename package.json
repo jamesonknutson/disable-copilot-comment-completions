@@ -1,81 +1,147 @@
 {
   "name": "disable-copilot-comment-completions",
-  "displayName": "Disable Copilot Comment Suggestions",
-  "description": "Stops Github Copilot from providing inline suggestions in the Editor when you are writing comments.",
-  "version": "0.1.2",
-  "icon": "media/icon.png",
+  "displayName": "Disable Copilot Completions in Scopes",
+  "description": "Prevents Github Copilot from providing inline suggestions in comments.",
+  "version": "1.0.1",
   "engines": {
-    "vscode": "^1.65.0"
+    "vscode": "^1.68.0"
   },
-  "repository": {
-    "url": "https://github.com/jamesonknutson/disable-copilot-comment-completions"
-  },
-  "bugs": {
-    "url": "https://github.com/jamesonknutson/disable-copilot-comment-completions/issues"
-  },
-  "author": {
-    "name": "James K",
-    "url": "https://github.com/jamesonknutson"
-  },
-  "keywords": [
-    "github",
-    "copilot",
-    "comment",
-    "comments",
-    "disable",
-    "toggle",
-    "suggestions",
-    "completions"
-  ],
-  "license": "MIT",
   "categories": [
     "Other"
   ],
   "activationEvents": [
     "onStartupFinished"
   ],
-  "publisher": "disable-copilot-comment-completions",
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
+        "command": "disable-copilot-comment-completions.enable",
+        "title": "Enable Copilot Scope Inhibitor",
+        "category": "Inhibit Comments",
+        "shortTitle": "Enable Inhibitor"
+      },
+      {
+        "command": "disable-copilot-comment-completions.disable",
+        "title": "Disable Copilot Scope Inhibitor",
+        "category": "Inhibit Comments",
+        "shortTitle": "Disable Inhibitor"
+      },
+      {
         "command": "disable-copilot-comment-completions.toggle",
-        "title": "GitHub Copilot: Toggle Inline Suggestions in Comments"
+        "title": "Toggle Copilot Scope Inhibitor",
+        "category": "Inhibit Comments",
+        "shortTitle": "Toggle Inhibitor"
+      },
+      {
+        "command": "disable-copilot-comment-completions.addScopes",
+        "title": "Add Scopes to Inhibit from Cursor",
+        "category": "Inhibit Comments",
+        "shortTitle": "Add Scopes",
+        "enablement": "editorIsOpen"
       }
     ],
     "configuration": {
-      "title": "Disable Copilot Completions in Comments",
+      "title": "Copilot Comments",
       "properties": {
+        "disable-copilot-comment-completions.inhibitMatchers": {
+          "default": [
+            "\\bcomment\\b"
+          ],
+          "type": "array",
+          "markdownDescription": "An array of Regular Expressions that should be used to check against each Scope String at the Cursor Position (command palette > Developer: Inspect Tokens and Scopes). If any of these Expressions successfully match against any of the Scope Strings at the Cursor Position, Copilot's Inline Suggestions will be (temporarily) disabled. Vice versa, if none of these Expressions match against the Cursor Position, Copilot's Inline Suggestions will be re-enabled (if it was most recently disabled by the Extension).",
+          "items": {
+            "description": "A string that is a valid regular expression to use to test against a TextMate Scope String to check if we should disable Copilot inline suggestions. Expression is created in the extension via `new RegExp(<the_value_you_write_here>)`, so make sure it is a valid expression. **Normally, this means double-backslashing any backslash, e.g. to write `\\bcomment\\b`, you would type `\\\\bcomment\\\\b`**. Or, if you want to use regular expressions with flags, an object with two properties: `expr` and `flags`. `expr` is where the regular expression as described above goes, `flags` is where the flags go (both props are strings).",
+            "default": "\\bcomment\\b",
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "regex",
+                "description": "A string that is a valid regular expression to use to test against a TextMate Scope String to check if we should disable Copilot inline suggestions. Expression is created in the extension via `new RegExp(<the_value_you_write_here>)`, so make sure it is a valid expression. **Normally, this means double-backslashing any backslash, e.g. to write `\\bcomment\\b`, you would type `\\\\bcomment\\\\b`**.",
+                "examples": [
+                  "\\bcomment\\b",
+                  "\\bpunctuation\\.definition\\b"
+                ],
+                "default": "\\bcomment\\b"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "expr"
+                ],
+                "properties": {
+                  "expr": {
+                    "type": "string",
+                    "format": "regex",
+                    "description": "A string that is a valid regular expression to use to test against a TextMate Scope String to check if we should disable Copilot inline suggestions. Expression is created in the extension via `new RegExp(<obj.expr>, <obj.flags>)`, so make sure it is a valid expression. **Normally, this means double-backslashing any backslash, e.g. to write `\\bcomment\\b`, you would type `\\\\bcomment\\\\b`**.",
+                    "examples": [
+                      "\\bcomment\\b",
+                      "\\bpunctuation\\.definition\\b"
+                    ],
+                    "default": "\\bcomment\\b"
+                  },
+                  "flags": {
+                    "type": "string",
+                    "pattern": "^[gimsuy]{1,}$",
+                    "examples": [
+                      "i",
+                      "gi",
+                      "gim"
+                    ],
+                    "description": "The flags to create the regular expression with (created via `new RegExp(<obj.expr>, <obj.flags>)`). [gimsuy] are the only valid characters here.",
+                    "default": "i"
+                  }
+                }
+              }
+            ]
+          }
+        },
         "disable-copilot-comment-completions.active": {
           "type": "boolean",
-          "description": "Whether or not this Extension is enabled. If set to true, will disable Copilot's Inline Suggestions feature whenever you are typing a comment, then enable it whenever you're not.",
+          "description": "Whether or not you want the Extension to be enabled. You can also just uninstall the extension, but hey, whatever floats your boat boss.",
           "default": true
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "test-compile": "tsc -p ./"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0",
-    "@types/mocha": "^9.1.0",
-    "@types/node": "14.x",
-    "@types/vscode": "^1.65.0",
-    "@typescript-eslint/eslint-plugin": "^5.12.1",
-    "@typescript-eslint/parser": "^5.12.1",
-    "@vscode/test-electron": "^2.1.2",
-    "eslint": "^8.9.0",
-    "glob": "^7.2.0",
-    "mocha": "^9.2.1",
-    "typescript": "^4.6.2"
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.68.0",
+    "@typescript-eslint/eslint-plugin": "^5.27.0",
+    "@typescript-eslint/parser": "^5.27.0",
+    "@vscode/test-electron": "^2.1.3",
+    "esbuild": "^0.14.48",
+    "eslint": "^8.16.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.0.0",
+    "ts-loader": "^9.3.1",
+    "typescript": "^4.7.2",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0"
   },
   "extensionDependencies": [
     "draivin.hscopes"
-  ]
+  ],
+  "homepage": "https://github.com/jamesonknutson/disable-copilot-comment-completions",
+  "repository": {
+    "url": "https://github.com/jamesonknutson/disable-copilot-comment-completions"
+  },
+  "publisher": "disable-copilot-comment-completions"
 }
