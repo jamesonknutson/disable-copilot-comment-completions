@@ -1,11 +1,11 @@
 {
   "name": "disable-copilot-comment-completions",
   "displayName": "Disable Copilot Completions in Scopes",
-  "description": "Prevents Github Copilot from providing inline suggestions in comments.",
+  "description": "Prevents GitHub Copilot from providing Inline Suggestions when user-defined criteria is met",
   "icon": "media/icon.png",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "engines": {
-    "vscode": "^1.68.0"
+    "vscode": "^1.77.0"
   },
   "categories": [
     "Other"
@@ -13,7 +13,7 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "main": "./out/extension.js",
+  "main": "./out/entry.js",
   "contributes": {
     "commands": [
       {
@@ -45,97 +45,244 @@
     "configuration": {
       "title": "Copilot Comments",
       "properties": {
-        "disable-copilot-comment-completions.inhibitMatchers": {
-          "default": [
-            "\\bcomment\\b"
-          ],
-          "type": "array",
-          "markdownDescription": "An array of Regular Expressions that should be used to check against each Scope String at the Cursor Position (command palette > Developer: Inspect Tokens and Scopes). If any of these Expressions successfully match against any of the Scope Strings at the Cursor Position, Copilot's Inline Suggestions will be (temporarily) disabled. Vice versa, if none of these Expressions match against the Cursor Position, Copilot's Inline Suggestions will be re-enabled (if it was most recently disabled by the Extension).",
+        "disable-copilot-comment-completions.active": {
+          "default": true,
+          "description": "Whether or not you want the Extension to be enabled. You can also just uninstall the extension, but hey, whatever\nfloats your boat boss.",
+          "type": "boolean"
+        },
+        "disable-copilot-comment-completions.contentRules": {
+          "description": "An (optional) array of Rules to apply against the content of the document itself, based around the cursor's position.",
           "items": {
-            "description": "A string that is a valid regular expression to use to test against a TextMate Scope String to check if we should disable Copilot inline suggestions. Expression is created in the extension via `new RegExp(<the_value_you_write_here>)`, so make sure it is a valid expression. **Normally, this means double-backslashing any backslash, e.g. to write `\\bcomment\\b`, you would type `\\\\bcomment\\\\b`**. Or, if you want to use regular expressions with flags, an object with two properties: `expr` and `flags`. `expr` is where the regular expression as described above goes, `flags` is where the flags go (both props are strings).",
-            "default": "\\bcomment\\b",
-            "oneOf": [
+            "anyOf": [
               {
-                "type": "string",
-                "format": "regex",
-                "description": "A string that is a valid regular expression to use to test against a TextMate Scope String to check if we should disable Copilot inline suggestions. Expression is created in the extension via `new RegExp(<the_value_you_write_here>)`, so make sure it is a valid expression. **Normally, this means double-backslashing any backslash, e.g. to write `\\bcomment\\b`, you would type `\\\\bcomment\\\\b`**.",
-                "examples": [
-                  "\\bcomment\\b",
-                  "\\bpunctuation\\.definition\\b"
-                ],
-                "default": "\\bcomment\\b"
+                "allOf": [
+                  {
+                    "description": "An exclusion rule that uses basic string comparison functions (includes,\nstartsWith, endsWith, equals) to evaluate against a given string.",
+                    "properties": {
+                      "mode": {
+                        "default": "includes",
+                        "description": "Optional preference of how to compare the rule's `value` property to the thing being compared.\nIf omitted, defaults to `includes`.",
+                        "enum": [
+                          "endsWith",
+                          "equals",
+                          "includes",
+                          "startsWith"
+                        ],
+                        "type": "string"
+                      },
+                      "type": {
+                        "enum": [
+                          "string"
+                        ],
+                        "type": "string"
+                      },
+                      "value": {
+                        "description": "The value to compare against the operand that is being evaluated against this rule.",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "value"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "expandRangeByLines": {
+                        "description": "Optional. If specified, this number will be applied as an offset to the line number at the caret\nposition, expanding the range whose text content will be tested against the rule specified in `value`\nto have a start line of `<currentLine> - <expandRangeByLines>` and an end line of\n`<currentLine> + <expandRangeByLines>`.",
+                        "type": "number"
+                      }
+                    },
+                    "type": "object"
+                  }
+                ]
               },
               {
-                "type": "object",
-                "required": [
-                  "expr"
-                ],
-                "properties": {
-                  "expr": {
-                    "type": "string",
-                    "format": "regex",
-                    "description": "A string that is a valid regular expression to use to test against a TextMate Scope String to check if we should disable Copilot inline suggestions. Expression is created in the extension via `new RegExp(<obj.expr>, <obj.flags>)`, so make sure it is a valid expression. **Normally, this means double-backslashing any backslash, e.g. to write `\\bcomment\\b`, you would type `\\\\bcomment\\\\b`**.",
-                    "examples": [
-                      "\\bcomment\\b",
-                      "\\bpunctuation\\.definition\\b"
+                "allOf": [
+                  {
+                    "description": "An exclusion rule that uses a regular expression to evaluate against a given string.",
+                    "properties": {
+                      "type": {
+                        "enum": [
+                          "regexp"
+                        ],
+                        "type": "string"
+                      },
+                      "value": {
+                        "description": "The values to pass to the `RegExp` constructor function, e.g: `new RegExp(value.source, value?.flags)`",
+                        "properties": {
+                          "flags": {
+                            "description": "Optional RegExp flags (gimsuy) to use as the second argument passed to the `RegExp` constructor function.",
+                            "type": "string"
+                          },
+                          "source": {
+                            "description": "The source string to use as the first argument passed to the `RegExp` constructor function.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "source"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "value"
                     ],
-                    "default": "\\bcomment\\b"
+                    "type": "object"
                   },
-                  "flags": {
-                    "type": "string",
-                    "pattern": "^[gimsuy]{1,}$",
-                    "examples": [
-                      "i",
-                      "gi",
-                      "gim"
-                    ],
-                    "description": "The flags to create the regular expression with (created via `new RegExp(<obj.expr>, <obj.flags>)`). [gimsuy] are the only valid characters here.",
-                    "default": "i"
+                  {
+                    "properties": {
+                      "expandRangeByLines": {
+                        "description": "Optional. If specified, this number will be applied as an offset to the line number at the caret\nposition, expanding the range whose text content will be tested against the rule specified in `value`\nto have a start line of `<currentLine> - <expandRangeByLines>` and an end line of\n`<currentLine> + <expandRangeByLines>`.",
+                        "type": "number"
+                      }
+                    },
+                    "type": "object"
                   }
-                }
+                ]
+              }
+            ],
+            "description": "A rule that is applied against the content of the document itself, based around the cursor's\nposition in the document, as opposed to being applied against the TextMate Scopes at the cursor's\nposition."
+          },
+          "type": "array"
+        },
+        "disable-copilot-comment-completions.debug": {
+          "description": "When set to true, the Extension will create an Output Channel and log information about what it's doing.",
+          "type": "boolean"
+        },
+        "disable-copilot-comment-completions.eventProcessingThrottleDelayMs": {
+          "default": 500,
+          "description": "This extension performs relatively expensive computations when processing the\n[onDidChangeTextEditorSelection](https://code.visualstudio.com/api/references/vscode-api#:~:text=onDidChangeTextEditorSelection%3A%20Event%3CTextEditorSelectionChangeEvent%3E) event.\n\nThis setting allows you to throttle the rate at which these computations are performed. The default value of\n`500` means that the computations will be performed at most once every 500ms. Set this to `0` to disable throttling.\n\nIf throttling is disabled, you may find that this Extension slows VSCode down during certain operations, especially\ninside of large files (as this Extension has to tokenize the file when it is changed, a bigger file means more\nprocessing to figure out what scopes are at the current Caret position).",
+          "type": "number"
+        },
+        "disable-copilot-comment-completions.globPatterns": {
+          "description": "An (optional) array of glob patterns to match against the path of active file. If any of the globs\ndefined here matches the active file, Inline Suggestions will be inhibited.\n\nUses [multimatch](https://www.npmjs.com/package/multimatch) under the hood, so any valid multimatch\npattern will work here.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "disable-copilot-comment-completions.textMateRules": {
+          "default": [
+            {
+              "mode": "includes",
+              "type": "string",
+              "value": "comment"
+            },
+            {
+              "mode": "includes",
+              "type": "string",
+              "value": "punctuation.definition"
+            }
+          ],
+          "description": "An array of rules to apply against the TextMate Scopes at the cursor position. If any rule matches,\nCopilot's inline suggestions will be toggled off.",
+          "items": {
+            "anyOf": [
+              {
+                "description": "An exclusion rule that uses basic string comparison functions (includes,\nstartsWith, endsWith, equals) to evaluate against a given string.",
+                "properties": {
+                  "mode": {
+                    "default": "includes",
+                    "description": "Optional preference of how to compare the rule's `value` property to the thing being compared.\nIf omitted, defaults to `includes`.",
+                    "enum": [
+                      "endsWith",
+                      "equals",
+                      "includes",
+                      "startsWith"
+                    ],
+                    "type": "string"
+                  },
+                  "type": {
+                    "enum": [
+                      "string"
+                    ],
+                    "type": "string"
+                  },
+                  "value": {
+                    "description": "The value to compare against the operand that is being evaluated against this rule.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "value"
+                ],
+                "type": "object"
+              },
+              {
+                "description": "An exclusion rule that uses a regular expression to evaluate against a given string.",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "regexp"
+                    ],
+                    "type": "string"
+                  },
+                  "value": {
+                    "description": "The values to pass to the `RegExp` constructor function, e.g: `new RegExp(value.source, value?.flags)`",
+                    "properties": {
+                      "flags": {
+                        "description": "Optional RegExp flags (gimsuy) to use as the second argument passed to the `RegExp` constructor function.",
+                        "type": "string"
+                      },
+                      "source": {
+                        "description": "The source string to use as the first argument passed to the `RegExp` constructor function.",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "source"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "type",
+                  "value"
+                ],
+                "type": "object"
               }
             ]
-          }
-        },
-        "disable-copilot-comment-completions.active": {
-          "type": "boolean",
-          "description": "Whether or not you want the Extension to be enabled. You can also just uninstall the extension, but hey, whatever floats your boat boss.",
-          "default": true
+          },
+          "type": "array"
         }
       }
     }
   },
   "scripts": {
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
-    "vscode:prepublish": "npm run esbuild-base -- --minify",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run esbuild-base -- --sourcemap",
-    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-    "test-compile": "tsc -p ./"
+    "test-compile": "tsc -p ./",
+    "compile": "tsc -p ./",
+    "esbuild": "rimraf ./out && npm run esbuild-base --sourcemap",
+    "esbuild-base": "esbuild ./src/entry.ts --bundle --outfile=out/entry.js --external:vscode --format=cjs --platform=node",
+    "esbuild-watch": "npm run esbuild-base --sourcemap --watch",
+    "vscode:prepublish": "rimraf ./out && npm run esbuild-base --minify",
+    "watch": "tsc -watch -p ./",
+    "generate-schema": "typescript-json-schema ./src/configuration.ts TConfiguration --refs false --aliasRefs false --topRef false --required true --strictNullChecks true --out ./configuration-json-schema.json",
+    "generate-vscode-types": "typed-vscode generate --out src/generated.ts",
+    "package": "vsce package --out ./packages"
   },
   "devDependencies": {
-    "@types/glob": "^7.2.0",
-    "@types/mocha": "^9.1.1",
-    "@types/node": "16.x",
-    "@types/vscode": "^1.68.0",
-    "@typescript-eslint/eslint-plugin": "^5.27.0",
-    "@typescript-eslint/parser": "^5.27.0",
-    "@vscode/test-electron": "^2.1.3",
-    "esbuild": "^0.14.48",
-    "eslint": "^8.16.0",
-    "glob": "^8.0.3",
-    "mocha": "^10.0.0",
-    "ts-loader": "^9.3.1",
-    "typescript": "^4.7.2",
-    "webpack": "^5.73.0",
-    "webpack-cli": "^4.10.0"
+    "@total-typescript/ts-reset": "^0.4.2",
+    "@types/node": "^16.18.23",
+    "@types/vscode": "^1.77.0",
+    "@typescript-eslint/eslint-plugin": "^5.57.1",
+    "@typescript-eslint/parser": "^5.57.1",
+    "esbuild": "^0.14.54",
+    "eslint": "^8.37.0",
+    "eslint-config-prettier": "^8.8.0",
+    "prettier": "^2.8.7",
+    "prettier-eslint": "^15.0.1",
+    "rimraf": "^4.4.1",
+    "ts-json-schema-generator": "^1.2.0",
+    "ts-loader": "^9.4.2",
+    "tslib": "^2.5.0",
+    "type-fest": "^3.7.2",
+    "typed-vscode": "^0.0.5",
+    "typescript": "^5.1.0-dev.20230406",
+    "typescript-json-schema": "^0.56.0"
   },
   "extensionDependencies": [
     "draivin.hscopes"
@@ -143,5 +290,8 @@
   "repository": {
     "url": "https://github.com/jamesonknutson/disable-copilot-comment-completions"
   },
-  "publisher": "disable-copilot-comment-completions"
+  "publisher": "disable-copilot-comment-completions",
+  "dependencies": {
+    "multimatch": "^5.0.0"
+  }
 }
