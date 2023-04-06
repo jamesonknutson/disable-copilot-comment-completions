@@ -1,23 +1,30 @@
 {
+  "env": {
+    "es6": true,
+    "node": true
+  },
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended"
   ],
   "parser": "@typescript-eslint/parser",
-  "root": true,
   "parserOptions": {
     "ecmaVersion": 2022,
-    "sourceType": "module"
-  },
-  "env": {
-    "node": true,
-    "es6": true
+    "sourceType": "script"
   },
   "plugins": [
     "@typescript-eslint"
   ],
+  "root": true,
   "rules": {
-    "prefer-const": ["off"],
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/ban-types": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-empty-function": "warn",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-namespace": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
     "array-bracket-spacing": [
       1,
       "always"
@@ -26,14 +33,9 @@
       1,
       "always"
     ],
-    "@typescript-eslint/no-unused-vars": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-namespace": "off",
-    "@typescript-eslint/no-explicit-any": "off",
-    "@typescript-eslint/ban-types": "off",
-    "@typescript-eslint/no-non-null-assertion": "off",
-    "@typescript-eslint/no-empty-function": "warn",
-    "@typescript-eslint/no-empty-interface": "off",
+    "prefer-const": [
+      "off"
+    ],
     "quotes": [
       "warn",
       "single",

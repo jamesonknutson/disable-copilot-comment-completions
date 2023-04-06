@@ -1,12 +1,12 @@
-.vscode
-node_modules
-src/
-tsconfig.json
-webpack.config.js
-.git
-.gitignore
-vsc-extension-quickstart.md
-out/**.map
-out/test
-.eslintignore
-.eslintrc.json
+# Explicitly include only what we need
+!.vscodeignore
+!CHANGELOG.md
+!LICENSE
+!media
+!out/entry.js
+!package-lock.json
+!package.json
+!README.md
+
+# Exclude everything else
+**/*
