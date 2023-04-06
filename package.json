@@ -151,7 +151,8 @@
         },
         "disable-copilot-comment-completions.debug": {
           "description": "When set to true, the Extension will create an Output Channel and log information about what it's doing.",
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         },
         "disable-copilot-comment-completions.eventProcessingThrottleDelayMs": {
           "default": 500,
@@ -163,7 +164,8 @@
           "items": {
             "type": "string"
           },
-          "type": "array"
+          "type": "array",
+          "default": []
         },
         "disable-copilot-comment-completions.textMateRules": {
           "default": [
@@ -171,11 +173,6 @@
               "mode": "includes",
               "type": "string",
               "value": "comment"
-            },
-            {
-              "mode": "includes",
-              "type": "string",
-              "value": "punctuation.definition"
             }
           ],
           "description": "An array of rules to apply against the TextMate Scopes at the cursor position. If any rule matches,\nCopilot's inline suggestions will be toggled off.",
@@ -255,10 +252,11 @@
   "scripts": {
     "test-compile": "tsc -p ./",
     "compile": "tsc -p ./",
-    "esbuild": "rimraf ./out && npm run esbuild-base --sourcemap",
-    "esbuild-base": "esbuild ./src/entry.ts --bundle --outfile=out/entry.js --external:vscode --format=cjs --platform=node",
-    "esbuild-watch": "npm run esbuild-base --sourcemap --watch",
-    "vscode:prepublish": "rimraf ./out && npm run esbuild-base --minify",
+    "esbuild": "rimraf ./out && npm run esbuild-base -- --sourcemap",
+    "esbuild-base": "esbuild ./src/entry.ts --bundle --outfile=out/entry.js --external:vscode --format=cjs --platform=node --log-level=info",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "esbuild-dev": "rimraf ./out && npm run esbuild-base -- --sourcemap",
+    "vscode:prepublish": "rimraf ./out && npm run esbuild-base -- --minify",
     "watch": "tsc -watch -p ./",
     "generate-schema": "typescript-json-schema ./src/configuration.ts TConfiguration --refs false --aliasRefs false --topRef false --required true --strictNullChecks true --out ./configuration-json-schema.json",
     "generate-vscode-types": "typed-vscode generate --out src/generated.ts",
