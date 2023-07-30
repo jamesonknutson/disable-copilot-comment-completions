@@ -1,43 +1,82 @@
+import z from 'zod'
+
 /**
- * An exclusion rule that uses basic string comparison functions (includes,
+ * An exclusion rule that uses basic string comparison functions (includes/string,
  * startsWith, endsWith, equals) to evaluate against a given string.
+ *
+ * @example <caption>Rule that case-insensitively checks for the presence of the substring 'foo' (all forms are equivalent)</caption>
+ * ```json
+ * { "type": "string", "ignoreCase": true, "value": "foo" }
+ * { "type": "includes", "ignoreCase": true, "value": "foo" }
+ * { "ignoreCase": true, "value": "foo" }
+ * ```
  */
 export type StringRule = {
-  type: 'string'
+  /**
+   * The condition that is used to compare `StringRule.value` against whatever is
+   * being compared. The value `string` is a synonym for `includes`, and is provided
+   * to keep backwards compatibility with earlier versions of this Extension. If omitted,
+   * the default value is `includes`.
+   *
+   * @optional
+   * @default 'includes'
+   */
+  type?: 'string' | 'includes' | 'startsWith' | 'endsWith' | 'equals'
   /**
    * The value to compare against the operand that is being evaluated against this rule.
    */
   value: string
   /**
-   * Optional preference of how to compare the rule's `value` property to the thing being compared.
-   * If omitted, defaults to `includes`.
+   * Optional. If true, the rule will be evaluated case-insensitively.
    *
-   * @default "includes"
+   * @default false
    */
-  mode?: 'includes' | 'startsWith' | 'endsWith' | 'equals'
+  ignoreCase?: boolean
+}
+
+export type NormalizedStringRule = Omit<StringRule, 'type'> & {
+  type: 'includes' | 'startsWith' | 'endsWith' | 'equals'
 }
 
 /**
  * An exclusion rule that uses a regular expression to evaluate against a given string.
+ *
+ * @example
+```jsonc
+// Rule that matches against the pattern `/^meta\.import\.ts$/` (all forms are equivalent)
+{ "type": "regexp", "value": { "source": "^meta\\.import\\.ts$" } }
+{ "type": "matches", "value": { "source": "^meta\\.import\\.ts$" } }
+{ "value": { "source": "^meta\\.import\\.ts$" } }
+```
  */
 export type RegExpRule = {
-  type: 'regexp'
   /**
-   * The values to pass to the `RegExp` constructor function, e.g: `new RegExp(value.source, value?.flags)`
+   * The type of the rule to apply. This property is no longer used as a Rule can be identified
+   * as a RegExp rule by the shape of the `value` property, but it is kept for backwards compatibility
+   * with the original `RegExpRule` type.
+   *
+   * @optional
    */
+  type?: 'regexp' | 'matches'
   value: {
     /**
      * The source string to use as the first argument passed to the `RegExp` constructor function.
      */
     source: string
     /**
-     * Optional RegExp flags (gimsuy) to use as the second argument passed to the `RegExp` constructor function.
+     * Optional RegExp flags (`[gimsuy]`) to use as the second argument passed to the `RegExp` constructor function.
+     *
+     * @optional
+     * @default undefined
      */
-    flags?: string
+    flags?: string | undefined
   }
 }
 
+export type NormalizedRegExpRule = Omit<RegExpRule, 'type'> & { type: 'regexp' }
+
 export type MatchRule = StringRule | RegExpRule
+export type NormalizedMatchRule = NormalizedStringRule | NormalizedRegExpRule
 
 /**
  * A rule that is applied against the content of the document itself, based around the cursor's
@@ -54,62 +93,101 @@ export type ContentRule = MatchRule & {
   expandRangeByLines?: number
 }
 
-export type TConfiguration = {
-  /**
-   * An (optional) array of glob patterns to match against the path of active file. If any of the globs
-   * defined here matches the active file, Inline Suggestions will be inhibited.
-   *
-   * Uses [multimatch](https://www.npmjs.com/package/multimatch) under the hood, so any valid multimatch
-   * pattern will work here.
-   */
-  'disable-copilot-comment-completions.globPatterns'?: string[]
+export namespace Rules {
+  export namespace v2_0_1 {
+    export type StringRule = z.infer<typeof StringRuleSchema>
+    export const StringRuleSchema = z.object({
+      type: z.enum([ 'string', 'includes', 'startsWith', 'endsWith', 'equals' ]).optional(),
+      value: z.string(),
+      ignoreCase: z.boolean().optional(),
+    })
 
-  /**
-   * This extension performs relatively expensive computations when processing the
-   * [onDidChangeTextEditorSelection](https://code.visualstudio.com/api/references/vscode-api#:~:text=onDidChangeTextEditorSelection%3A%20Event%3CTextEditorSelectionChangeEvent%3E) event.
-   *
-   * This setting allows you to throttle the rate at which these computations are performed. The default value of
-   * `500` means that the computations will be performed at most once every 500ms. Set this to `0` to disable throttling.
-   *
-   * If throttling is disabled, you may find that this Extension slows VSCode down during certain operations, especially
-   * inside of large files (as this Extension has to tokenize the file when it is changed, a bigger file means more
-   * processing to figure out what scopes are at the current Caret position).
-   *
-   * @default 500
-   */
-  'disable-copilot-comment-completions.eventProcessingThrottleDelayMs'?: number
+    export type RegExpRule = z.infer<typeof RegExpRuleSchema>
+    export const RegExpRuleSchema = z.object({
+      type: z.enum([ 'regexp', 'matches' ]).optional(),
+      value: z.object({
+        source: z.string(),
+        flags: z.string().optional(),
+      }),
+    })
 
-  /**
-   * An array of rules to apply against the TextMate Scopes at the cursor position. If any rule matches,
-   * Copilot's inline suggestions will be toggled off.
-   *
-   * @required
-   * @default [ { "type": "string", "value": "comment", "mode": "includes" } ]
-   */
-  'disable-copilot-comment-completions.textMateRules': MatchRule[]
+    export type Rule = z.infer<typeof RuleSchema>
+    export const RuleSchema = z.discriminatedUnion('value', [ StringRuleSchema, RegExpRuleSchema ])
+  }
 
-  /**
-   * An (optional) array of Rules to apply against the content of the document itself, based around the cursor's position.
-   */
-  'disable-copilot-comment-completions.contentRules'?: ContentRule[]
+  export namespace v2_0_0 {
+    export type StringRule = z.infer<typeof StringRuleSchema>
+    export const StringRuleSchema = z.object({
+      type: z.literal('string'),
+      value: z.string(),
+      mode: z.enum([ 'includes', 'startsWith', 'endsWith', 'equals' ]).optional(),
+    })
 
-  /**
-   * Whether or not you want the Extension to be enabled. You can also just uninstall the extension, but hey, whatever
-   * floats your boat boss.
-   *
-   * @required
-   * @default true
-   */
-  'disable-copilot-comment-completions.active': boolean
+    export type RegExpRule = z.infer<typeof RegExpRuleSchema>
+    export const RegExpRuleSchema = z.object({
+      type: z.literal('regexp'),
+      value: z.object({
+        source: z.string(),
+        flags: z.string().optional(),
+      }),
+    })
 
-  /**
-   * When set to true, the Extension will create an Output Channel and log information about what it's doing.
-   */
-  'disable-copilot-comment-completions.debug'?: boolean
+    export type Rule = z.infer<typeof RuleSchema>
+    export const RuleSchema = z.discriminatedUnion('type', [ StringRuleSchema, RegExpRuleSchema ])
+    export function migrate(input: Rule): v2_0_1.StringRule | v2_0_1.RegExpRule {
+      if (input.type === 'string') {
+        const type = input.type ?? 'includes'
+        return {
+          ...input,
+          type: type === 'string' ? 'includes' : type,
+          ignoreCase: false,
+        }
+      } else {
+        return {
+          ...input,
+          type: 'regexp',
+          value: {
+            source: input.value.source,
+            flags: input.value.flags,
+          },
+        }
+      }
+    }
+  }
+
+  export namespace v1_0_2 {
+    export type Rule = string | { expr: string; flags?: string }
+    export const RuleSchema = z.union([ z.string(), z.object({ expr: z.string(), flags: z.string().optional() }) ])
+
+    export function migrate(input: Rule): v2_0_0.RegExpRule {
+      return {
+        type: 'regexp',
+        value: {
+          source: typeof input === 'string' ? input : input.expr,
+          flags: typeof input === 'string' ? undefined : input.flags,
+        },
+      }
+    }
+  }
 }
 
-export type TWorkspaceConfiguration = {
-  [K in keyof TConfiguration as K extends `disable-copilot-comment-completions.${infer P}`
-    ? P
-    : never]: TConfiguration[K]
+export function tryParseSchema<Z extends z.ZodTypeAny>(schema: Z, input: unknown): z.infer<Z> | null {
+  const parsed = schema.safeParse(input)
+  if (parsed.success) {
+    return parsed.data
+  }
+  return null
+}
+
+export function migrate(input: unknown): Rules.v2_0_1.Rule | null {
+  let rule: any = tryParseSchema(Rules.v2_0_1.RuleSchema, input)
+  if (rule) return rule
+
+  rule = tryParseSchema(Rules.v2_0_0.RuleSchema, input)
+  if (rule) return Rules.v2_0_0.migrate(rule)
+
+  rule = tryParseSchema(Rules.v1_0_2.RuleSchema, input)
+  if (rule) return migrate(Rules.v1_0_2.migrate(rule))
+
+  return null
 }

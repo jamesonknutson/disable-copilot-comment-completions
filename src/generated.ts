@@ -1,4 +1,5 @@
-import { TWorkspaceConfiguration as Configuration } from './configuration'
+import { ContentRule, MatchRule } from './configuration'
+import { WorkspaceConfiguration } from 'vscode'
 
 declare module 'vscode' {
   type ExtensionCommands =
@@ -7,10 +8,7 @@ declare module 'vscode' {
     | 'disable-copilot-comment-completions.toggle'
     | 'disable-copilot-comment-completions.addScopes'
   export namespace commands {
-    export function executeCommand<T = unknown>(
-      command: ExtensionCommands,
-      ...rest: any[]
-    ): Thenable<T>
+    export function executeCommand<T = unknown>(command: ExtensionCommands, ...rest: any[]): Thenable<T>
     export function registerCommand(
       command: ExtensionCommands,
       callback: (...args: any[]) => any,
@@ -18,11 +16,7 @@ declare module 'vscode' {
     ): Disposable
     export function registerTextEditorCommand(
       command: ExtensionCommands,
-      callback: (
-        textEditor: TextEditor,
-        edit: TextEditorEdit,
-        ...args: any[]
-      ) => void,
+      callback: (textEditor: TextEditor, edit: TextEditorEdit, ...args: any[]) => void,
       thisArg?: any
     ): Disposable
   }
@@ -38,10 +32,7 @@ declare module 'vscode' {
        * @param section Configuration name, supports _dotted_ names.
        * @return The value `section` denotes or `undefined`.
        */
-      get<K extends keyof Configuration, T extends Configuration[K]>(
-        section: K
-      ): T | undefined
-
+      get<K extends keyof ScopedConfiguration>(section: K): ScopedConfiguration[K] | undefined
       /**
        * Return a value from this configuration.
        *
@@ -49,18 +40,17 @@ declare module 'vscode' {
        * @param defaultValue A value should be returned when no value could be found, is `undefined`.
        * @return The value `section` denotes or the default.
        */
-      get<K extends keyof Configuration, T extends Configuration[K]>(
+      get<K extends keyof ScopedConfiguration>(
         section: K,
-        defaultValue: T
-      ): T
-
+        defaultValue: Exclude<ScopedConfiguration[K], undefined>
+      ): Exclude<ScopedConfiguration[K], undefined>
       /**
        * Check if this configuration has a certain value.
        *
        * @param section Configuration name, supports _dotted_ names.
        * @return `true` if the section doesn't resolve to `undefined`.
        */
-      has<K extends keyof Configuration>(section: K): boolean
+      has<K extends keyof ScopedConfiguration>(section: K): boolean
 
       /**
        * Retrieve all information about a configuration setting. A configuration value
@@ -76,21 +66,21 @@ declare module 'vscode' {
        * @param section Configuration name, supports _dotted_ names.
        * @return Information about a configuration setting or `undefined`.
        */
-      inspect<K extends keyof Configuration, T extends Configuration[K]>(
+      inspect<K extends keyof ScopedConfiguration>(
         section: K
       ):
         | {
             key: K
 
-            defaultValue?: T
-            globalValue?: T
-            workspaceValue?: T
-            workspaceFolderValue?: T
+            defaultValue?: ScopedConfiguration[K]
+            globalValue?: ScopedConfiguration[K]
+            workspaceValue?: ScopedConfiguration[K]
+            workspaceFolderValue?: ScopedConfiguration[K]
 
-            defaultLanguageValue?: T
-            globalLanguageValue?: T
-            workspaceLanguageValue?: T
-            workspaceFolderLanguageValue?: T
+            defaultLanguageValue?: ScopedConfiguration[K]
+            globalLanguageValue?: ScopedConfiguration[K]
+            workspaceLanguageValue?: ScopedConfiguration[K]
+            workspaceFolderLanguageValue?: ScopedConfiguration[K]
 
             languageIds?: string[]
           }
@@ -125,12 +115,71 @@ declare module 'vscode' {
        *	- configuration to workspace folder when there is no workspace folder settings.
        *	- configuration to workspace folder when {@link WorkspaceConfiguration} is not scoped to a resource.
        */
-      update<K extends keyof Configuration, T extends Configuration[K]>(
+      update<K extends keyof ScopedConfiguration>(
         section: K,
-        value: T,
-        configurationTarget?: ConfigurationTarget | boolean | null,
+        value: ScopedConfiguration[K],
+        configurationTarget?: ScopedConfiguration | boolean | null,
         overrideInLanguage?: boolean
       ): Thenable<void>
     } & Readonly<Record<string, string>>
   }
+}
+
+interface Configuration {
+  /**
+   * Whether or not you want the Extension to be enabled. You can also just uninstall the
+   * extension, but hey, whatever
+   * floats your boat boss.
+   */
+  'disable-copilot-comment-completions.active'?: boolean
+  /**
+   * An (optional) array of Rules to apply against the content of the document itself, based
+   * around the cursor's position.
+   */
+  'disable-copilot-comment-completions.contentRules'?: ContentRule[]
+  /**
+   * When set to true, the Extension will create an Output Channel and log information about
+   * what it's doing.
+   */
+  'disable-copilot-comment-completions.debug'?: boolean
+  /**
+   * This extension performs relatively expensive computations when processing the
+   *
+   * [onDidChangeTextEditorSelection](https://code.visualstudio.com/api/references/vscode-api#:~:text=onDidChangeTextEditorSelection%3A%20Event%3CTextEditorSelectionChangeEvent%3E)
+   * event.
+   *
+   * This setting allows you to throttle the rate at which these computations are performed.
+   * The default value of
+   * `500` means that the computations will be performed at most once every 500ms. Set this to
+   * `0` to disable throttling.
+   *
+   * If throttling is disabled, you may find that this Extension slows VSCode down during
+   * certain operations, especially
+   * inside of large files (as this Extension has to tokenize the file when it is changed, a
+   * bigger file means more
+   * processing to figure out what scopes are at the current Caret position).
+   */
+  'disable-copilot-comment-completions.eventProcessingThrottleDelayMs'?: number
+  /**
+   * An (optional) array of glob patterns to match against the path of active file. If any of
+   * the globs
+   * defined here matches the active file, Inline Suggestions will be inhibited.
+   *
+   * Uses [multimatch](https://www.npmjs.com/package/multimatch) under the hood, so any valid
+   * multimatch
+   * pattern will work here.
+   */
+  'disable-copilot-comment-completions.globPatterns'?: string[]
+  /**
+   * An array of rules to apply against the TextMate Scopes at the cursor position. If any
+   * rule matches,
+   * Copilot's inline suggestions will be toggled off.
+   */
+  'disable-copilot-comment-completions.textMateRules'?: MatchRule[]
+}
+
+type ExtensionID = 'disable-copilot-comment-completions'
+type WithoutID<T> = T extends `${ExtensionID}.${infer U}` ? U : T
+export type ScopedConfiguration = {
+  [K in keyof Configuration as WithoutID<K>]: Configuration[K]
 }

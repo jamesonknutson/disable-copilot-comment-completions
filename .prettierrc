@@ -1,10 +1,15 @@
 {
-  "printWidth": 140,
-  "semi": false,
   "parser": "typescript",
+  "printWidth": 120,
+  "semi": false,
   "singleQuote": true,
   "arrowParens": "avoid",
   "bracketSpacing": true,
   "eslintIntegration": true,
-  "endOfLine": "lf"
+  "endOfLine": "lf",
+  "useTabs": false,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "quoteProps": "consistent",
+  "jsxSingleQuote": true
 }

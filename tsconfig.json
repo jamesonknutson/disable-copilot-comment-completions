@@ -1,41 +1,17 @@
 {
+  "extends": "@jamesonknutson/tsconfig",
   "compilerOptions": {
-    "allowJs": false,
-    "allowSyntheticDefaultImports": true,
-    "allowUmdGlobalAccess": true,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "alwaysStrict": true,
-    "emitDecoratorMetadata": true,
-    "esModuleInterop": true,
-    "experimentalDecorators": true,
-    "forceConsistentCasingInFileNames": true,
-    "importHelpers": true,
-    "lib": [
-      "ES2022"
-    ],
-    "module": "commonjs",
-    "noErrorTruncation": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "noImplicitReturns": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedParameters": true,
     "outDir": "out",
-    "pretty": true,
-    "resolveJsonModule": true,
-    "rootDir": "src",
-    "skipDefaultLibCheck": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "strictBindCallApply": true,
-    "strictFunctionTypes": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": true,
-    "target": "ES2022"
+    "declaration": false,
+    "declarationMap": false,
+    "sourceRoot": "src/",
+    "moduleResolution": "Node16",
+    "module": "Node16",
+    "noImplicitReturns": false,
+    "exactOptionalPropertyTypes": false
+    
   },
   "include": [
-    "./src"
+    "src/*.ts",
   ]
 }

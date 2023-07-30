@@ -5,7 +5,10 @@
   "icon": "media/icon.png",
   "version": "2.0.0",
   "engines": {
-    "vscode": "^1.77.0"
+    "vscode": "^1.77.0",
+    "npm": "^9.5.0",
+    "pnpm": "please-use-npm",
+    "yarn": "please-use-npm"
   },
   "categories": [
     "Other"
@@ -252,10 +255,10 @@
   "scripts": {
     "test-compile": "tsc -p ./",
     "compile": "tsc -p ./",
-    "esbuild": "rimraf ./out && npm run esbuild-base -- --sourcemap",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
     "esbuild-base": "esbuild ./src/entry.ts --bundle --outfile=out/entry.js --external:vscode --format=cjs --platform=node --log-level=info",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-    "esbuild-dev": "rimraf ./out && npm run esbuild-base -- --sourcemap",
+    "esbuild-dev": "npm run esbuild-base -- --sourcemap",
     "vscode:prepublish": "rimraf ./out && npm run esbuild-base -- --minify",
     "watch": "tsc -watch -p ./",
     "generate-schema": "typescript-json-schema ./src/configuration.ts TConfiguration --refs false --aliasRefs false --topRef false --required true --strictNullChecks true --out ./configuration-json-schema.json",
@@ -263,23 +266,25 @@
     "package": "vsce package --out ./packages"
   },
   "devDependencies": {
+    "@jamesonknutson/eslint-config": "^1.0.0",
+    "@jamesonknutson/tsconfig": "^1.0.0",
     "@total-typescript/ts-reset": "^0.4.2",
-    "@types/node": "^16.18.23",
-    "@types/vscode": "^1.77.0",
-    "@typescript-eslint/eslint-plugin": "^5.57.1",
-    "@typescript-eslint/parser": "^5.57.1",
+    "@types/node": "^16.18.39",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.2.0",
+    "@typescript-eslint/parser": "^6.2.0",
     "esbuild": "^0.14.54",
-    "eslint": "^8.37.0",
-    "eslint-config-prettier": "^8.8.0",
-    "prettier": "^2.8.7",
+    "eslint": "^8.46.0",
+    "eslint-config-prettier": "^8.9.0",
+    "prettier": "^2.8.8",
     "prettier-eslint": "^15.0.1",
     "rimraf": "^4.4.1",
     "ts-json-schema-generator": "^1.2.0",
-    "ts-loader": "^9.4.2",
-    "tslib": "^2.5.0",
-    "type-fest": "^3.7.2",
+    "ts-loader": "^9.4.4",
+    "tslib": "^2.6.1",
+    "type-fest": "^4.0.0",
     "typed-vscode": "^0.0.5",
-    "typescript": "^5.1.0-dev.20230406",
+    "typescript": "^5.1.6",
     "typescript-json-schema": "^0.56.0"
   },
   "extensionDependencies": [
@@ -290,6 +295,7 @@
   },
   "publisher": "disable-copilot-comment-completions",
   "dependencies": {
-    "multimatch": "^5.0.0"
+    "multimatch": "^5.0.0",
+    "zod": "^3.21.4"
   }
 }
