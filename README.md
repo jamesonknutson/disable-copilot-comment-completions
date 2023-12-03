@@ -58,6 +58,38 @@ For ease of use with TextMate Scopes, the extension provides an easy way to sele
 
 - `disable-copilot-comment-completions.debug`: Boolean indicating whether or not the extension should log what it's doing to an output channel.
 
+## Example usage
+
+Disable copilot on python and typescript imports by adding this to your `.vscode/settings.json`:
+```json
+  "disable-copilot-comment-completions.contentRules": [
+    {
+      "type": "string",
+      "mode": "startsWith",
+      "value": "import "
+    },
+    {
+      "type": "string",
+      "mode": "startsWith",
+      "value": "from "
+    }
+  ],
+  "disable-copilot-comment-completions.textMateRules": [
+    {
+      "type": "regexp",
+      "value": {
+        "source": "^meta\\.import\\.ts$"
+      }
+    },
+    {
+      "type": "regexp",
+      "value": {
+        "source": "^meta\\.import\\.py$"
+      }
+    }
+  ],
+```
+
 ## Commands
 
 - `disable-copilot-comment-completions.toggle`: Toggles `disable-copilot-comment-completions.active` state (disables or enables the extension's functionality). You can bind this to a keyboard shortcut if you'd like. You can also disable/enable the extension by clicking the status bar item on the bottom right. (Command Palette: `Toggle Copilot Scope Inhibitor`)
