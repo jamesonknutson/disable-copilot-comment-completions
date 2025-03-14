@@ -3,7 +3,7 @@
   "displayName": "Disable Copilot Completions in Scopes",
   "description": "Prevents GitHub Copilot from providing Inline Suggestions when user-defined criteria is met",
   "icon": "media/icon.png",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "engines": {
     "vscode": "^1.77.0"
   },

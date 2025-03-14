@@ -24,7 +24,7 @@ import {
   createPredicateFromRule,
   isOldRuleFormat,
 } from './rule'
-import { MatchRule, RegExpRule, StringRule } from './configuration'
+import { ContentRule, MatchRule, RegExpRule, StringRule } from './configuration'
 import { HScopesAPI } from './hscopes'
 
 type GlobPattern = Opaque<string, 'GlobPattern'>
@@ -138,9 +138,7 @@ export class Manager {
    * @return {Promise<void>} A promise that resolves once the update has completed.
    */
   public static async setCopilotState(state: boolean): Promise<void> {
-    return await workspace
-      .getConfiguration(`github.copilot`)
-      .update(`inlineSuggest.enable`, state)
+    return await workspace.getConfiguration(`github.copilot`).update(`inlineSuggest.enable`, state, true)
   }
 
   private static async getHScopes(): Promise<HScopesAPI> {
@@ -340,7 +338,7 @@ export class Manager {
     const result =
       glob(
         excludedPath,
-        globPatterns.map((matcher) => this.createGlobPattern(matcher, uri))
+        globPatterns.map((matcher: string) => this.createGlobPattern(matcher, uri))
       ).length > 0
     this.cache.excludedGlobs.set(excludedPath, result)
 
@@ -416,9 +414,7 @@ export class Manager {
       finalRules.push({ type: 'string', value: item.label, mode: 'equals' })
     })
 
-    return await workspace
-      .getConfiguration(this.extensionId)
-      .update(`textMateRules`, finalRules)
+    return await workspace.getConfiguration(this.extensionId).update(`textMateRules`, finalRules, true)
   }
 
   /**
@@ -499,10 +495,8 @@ export class Manager {
     return (this.cache = {
       excludedGlobs: new Map(),
       excludedScopes: new Map(),
-      textMateRules: this.configuration.textMateRules.map((rule) =>
-        createPredicateFromRule(rule)
-      ),
-      contentRules: (this.configuration.contentRules ?? []).map((rule) => {
+      textMateRules: this.configuration.textMateRules.map(rule => createPredicateFromRule(rule)),
+      contentRules: (this.configuration.contentRules ?? []).map((rule: ContentRule) => {
         const predicate = createPredicateFromRule(rule)
         return (document: TextDocument, selection: Selection) => {
           const startRange = document.lineAt(
