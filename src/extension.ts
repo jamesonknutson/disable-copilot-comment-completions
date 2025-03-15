@@ -18,12 +18,7 @@ import {
   window,
   workspace,
 } from 'vscode'
-import {
-  areRulesEquivalent,
-  convertOldRuleFormat,
-  createPredicateFromRule,
-  isOldRuleFormat,
-} from './rule'
+import { areRulesEquivalent, convertOldRuleFormat, createPredicateFromRule, isOldRuleFormat } from './rule'
 import { MatchRule, RegExpRule, StringRule } from './configuration'
 import { HScopesAPI } from './hscopes'
 
@@ -49,10 +44,7 @@ export class Manager {
     return {
       debug: cfg.get(`debug`, false) as boolean | undefined,
       active: cfg.get(`active`, true) as boolean,
-      eventProcessingThrottleDelayMs: cfg.get(
-        `eventProcessingThrottleDelayMs`,
-        500
-      ),
+      eventProcessingThrottleDelayMs: cfg.get(`eventProcessingThrottleDelayMs`, 500),
       globPatterns: cfg.get(`globPatterns`),
       contentRules: cfg.get(`contentRules`),
       textMateRules: cfg.get(`textMateRules`, [
@@ -70,8 +62,7 @@ export class Manager {
     }
   }
 
-  public static readonly extensionId =
-    `disable-copilot-comment-completions` as const
+  public static readonly extensionId = `disable-copilot-comment-completions` as const
 
   private static _hscopes?: HScopesAPI
   private static _instance?: Manager
@@ -81,34 +72,33 @@ export class Manager {
   // #region Static Methods
 
   public static async convertOldConfiguration() {
-    const typedConfig = workspace.getConfiguration(
-      `disable-copilot-comment-completions`
-    )
+    const typedConfig = workspace.getConfiguration(`disable-copilot-comment-completions`)
     const untypedConfig = typedConfig as WorkspaceConfiguration
     const inhibitMatchers = untypedConfig.get(`inhibitMatchers`)
     if (inhibitMatchers === undefined) return
 
-    const promises = [ untypedConfig.update(`inhibitMatchers`, undefined, true) ]
+    const promises = [untypedConfig.update(`inhibitMatchers`, undefined, true)]
 
     if (Array.isArray(inhibitMatchers)) {
-      const textMateRules = inhibitMatchers.reduce(
-        (acc: Array<MatchRule>, value) =>
-          isOldRuleFormat(value) ? [ ...acc, convertOldRuleFormat(value) ] : acc,
-        []
-      )
+      const textMateRules = inhibitMatchers.reduce((acc: Array<MatchRule>, value) => {
+        if (isOldRuleFormat(value)) {
+          acc.push(convertOldRuleFormat(value))
+        }
+        return acc
+      }, [])
 
       if (textMateRules.length > 0) {
-        const newRules = [
-          ...this.configuration.textMateRules,
-          ...textMateRules,
-        ].reduce((acc: MatchRule[], rule, index, array) => {
-          const otherRules = array.slice(index + 1)
-          return otherRules.some((otherRule) =>
-            areRulesEquivalent(rule, otherRule)
-          )
-            ? acc
-            : [ ...acc, rule ]
-        }, [])
+        const newRules = [...Manager.configuration.textMateRules, ...textMateRules].reduce(
+          (acc: MatchRule[], rule, index, array) => {
+            const otherRules = array.slice(index + 1)
+            if (!otherRules.some((otherRule) => areRulesEquivalent(rule, otherRule))) {
+              acc.push(rule)
+            }
+
+            return acc
+          },
+          []
+        )
 
         promises.push(typedConfig.update(`textMateRules`, newRules, true))
       }
@@ -119,7 +109,8 @@ export class Manager {
 
   public static async getInstance(): Promise<Manager> {
     // eslint-disable-next-line no-async-promise-executor
-    return (this._instance ??= await new Promise<Manager>(async (resolve) => {
+    // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
+    return (Manager._instance ??= await new Promise<Manager>(async (resolve) => {
       const hscopes = await Manager.getHScopes()
 
       return resolve(
@@ -144,23 +135,22 @@ export class Manager {
   }
 
   private static async getHScopes(): Promise<HScopesAPI> {
-    return (this._hscopes ??= await new Promise<HScopesAPI>(
-      (resolve, reject) => {
-        const extension = extensions.getExtension<HScopesAPI>(`draivin.hscopes`)
-        if (!extension) {
-          const errorMessage = `Required Dependency 'draivin.hscopes' is not installed. Please install it from the VSCode Extensions Marketplace and reload the window.`
+    return (Manager._hscopes ??= await new Promise<HScopesAPI>((resolve, reject) => {
+      const extension = extensions.getExtension<HScopesAPI>(`draivin.hscopes`)
+      if (!extension) {
+        const errorMessage = `Required Dependency 'draivin.hscopes' is not installed. Please install it from the VSCode Extensions Marketplace and reload the window.`
           return window
             .showErrorMessage(errorMessage)
             .then(() => reject(errorMessage))
-        }
+      }
 
-        return extension.activate().then(
-          (api) => resolve(api),
+      return extension.activate().then(
+        (api) => resolve(api),
           (err) =>
             window
               .showErrorMessage(`Error loading 'draivin.hscopes': ${err}`)
               .then(() => reject(err))
-        )
+      )
       }
     ))
   }
