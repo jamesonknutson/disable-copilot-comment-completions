@@ -6,7 +6,39 @@ Prevents Github Copilot from providing inline suggestions in comments (and anywh
 
 Can be used to define "exclusion rules" that instruct the Extension to temporarily disable Copilot's inline suggestions feature when certain strings of text from the document itself are matched at the cursor position, or when certain glob patterns match the active document, or when certain TextMate scopes are found at the cursor position.
 
+## Example usage
 Some example use cases / configurations include:
+
+- Disable copilot on python and typescript imports by adding this to your `.vscode/settings.json`:
+```json
+"disable-copilot-comment-completions.contentRules": [
+  {
+    "type": "string",
+    "mode": "startsWith",
+    "value": "import "
+  },
+  {
+    "type": "string",
+    "mode": "startsWith",
+    "value": "from "
+  }
+],
+"disable-copilot-comment-completions.textMateRules": [
+  {
+    "type": "regexp",
+    "value": {
+      "source": "^meta\\.import\\.ts$"
+    }
+  },
+  {
+    "type": "regexp",
+    "value": {
+      "source": "^meta\\.import\\.py$"
+    }
+  }
+],
+```
+
 - [Using a glob pattern rule to disable inline suggestions when editing commit messages](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/5)
 ```json
 {
