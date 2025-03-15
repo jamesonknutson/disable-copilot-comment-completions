@@ -3,7 +3,7 @@
   "displayName": "Disable Copilot Completions in Scopes",
   "description": "Prevents GitHub Copilot from providing Inline Suggestions when user-defined criteria is met",
   "icon": "media/icon.png",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "engines": {
     "vscode": "^1.77.0"
   },
@@ -247,13 +247,13 @@
           "type": "array"
         },
         "disable-copilot-comment-completions.configurationTarget": {
-          "default": "includes",
+          "default": "Global",
           "enum": [
             "Global",
             "Workspace",
             "WorkspaceFolder"
           ],
-          "description": "Specifies where to save the changes to the `github.copilot.editor.enableAutoCompletions` setting to. By default, VSCode will save the settings to the `WorkspaceFolder` settings if the configuration is resource-specific, otherwise it will write to the `Workspace` settings. If you want the extension to write it's changes to the global/user `settings.json` file, you should specify `Global` here. By omiting this setting, you leave the choice up to VSCode, which will result in the setting being wrote to your workspaces' settings.",
+          "description": "Specifies where to save the changes to the `github.copilot.editor.enableAutoCompletions` setting to. By default, VSCode will save the settings to the `WorkspaceFolder` settings if the configuration is resource-specific, otherwise it will write to the `Workspace` settings. If you want the extension to write it's changes to the global/user `settings.json` file, you should specify `Global` here. If you want the extension to try and figure it out itself, you can just leave this as `null`.",
           "type": "string"
         }
       }

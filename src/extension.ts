@@ -19,7 +19,7 @@ import {
   window,
   workspace,
 } from 'vscode'
-import { MatchRule, RegExpRule, StringRule } from './configuration'
+import { MatchRule, RegExpRule, StringRule, type TConfigurationTarget } from './configuration'
 import { HScopesAPI } from './hscopes'
 import { areRulesEquivalent, convertOldRuleFormat, createPredicateFromRule, isOldRuleFormat } from './rule'
 import { throttled } from './throttle'
@@ -47,7 +47,7 @@ export class Manager {
     return {
       debug: cfg.get(`debug`, false) as boolean | undefined,
       active: cfg.get(`active`, true) as boolean,
-      configurationTarget: cfg.get('configurationTarget'),
+      configurationTarget: cfg.get('configurationTarget', 'Global') as TConfigurationTarget,
       eventProcessingThrottleDelayMs: cfg.get(`eventProcessingThrottleDelayMs`, 500),
       globPatterns: cfg.get(`globPatterns`),
       contentRules: cfg.get(`contentRules`),
@@ -133,8 +133,7 @@ export class Manager {
    * @return {Promise<void>} A promise that resolves once the update has completed.
    */
   public static async setCopilotState(state: boolean): Promise<void> {
-    let target: ConfigurationTarget | boolean | null | undefined = undefined
-
+    let target: ConfigurationTarget | null = null
     switch (Manager.configuration.configurationTarget) {
       case 'Global':
         target = ConfigurationTarget.Global
@@ -149,10 +148,18 @@ export class Manager {
         target = null
     }
 
-    await Promise.all([
-      setCopilotSettings('github.copilot.inlineSuggest.enable', state, target),
+    const thenables = [
+      // setCopilotSettings('github.copilot.inlineSuggest.enable', state, target),
       setCopilotSettings('github.copilot.editor.enableAutoCompletions', state, target),
-    ])
+    ]
+
+    if (state === false) {
+      thenables.push(commands.executeCommand(`editor.action.inlineSuggest.hide`))
+    }
+
+    await Promise.all(thenables)
+
+    // console.debug(`Finished executing thenables:`, results)
   }
 
   private static async getHScopes(): Promise<HScopesAPI> {
@@ -215,15 +222,37 @@ export class Manager {
    * Binds extension event handlers to events, e.g. registers commands, etc.
    */
   private bindEvents() {
+    let prevSelectionFnCallTimestamp = 0
+
     return [
       commands.registerCommand(`${this.extensionId}.addScopes`, this.onAddScopesCommand, this),
       workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this),
+      /* window.onDidChangeActiveTextEditor((event) => {
+        if (!event) {
+          this.logMessage(`window.onDidChangeActiveTextEditor`, `Moved to no text editor.`)
+          return
+        }
+
+        const { document, options, selection } = event
+        const selectionText = document.getText(selection)
+        const activeLine = document.lineAt(selection.active)
+        this.logMessage(`window.onDidChangeActiveTextEditor`, `Selection Text: ${selectionText}`)
+        this.logMessage(`window.onDidChangeActiveTextEditor`, `Line Number: ${activeLine.lineNumber}`)
+        this.logMessage(`window.onDidChangeActiveTextEditor`, `Line Text: ${activeLine.text}`)
+      }, this),
+      workspace.onDidChangeTextDocument((event) => {
+        if (event.document.uri.scheme === 'output') {
+          return
+        }
+
+        this.logMessage(`workspace.onDidChangeTextDocument`, event)
+      }, this), */
       window.onDidChangeTextEditorSelection((event) => {
-        this.logMessage(
-          `window.onDidChangeTextEditorSelection`,
-          `[${Date.now()}] Really did change text editor selection. Calling throttled event.`
-        )
-        return this.throttled_onDidChangeTextEditorSelection(event)
+        const delayMs = this.configuration.eventProcessingThrottleDelayMs
+        const now = Date.now()
+        if (typeof delayMs !== 'number' || delayMs <= 0 || now - prevSelectionFnCallTimestamp >= delayMs) {
+          return this.onDidChangeTextEditorSelection(event)
+        }
       }, this),
     ]
   }
@@ -388,11 +417,6 @@ export class Manager {
     if (event.affectsConfiguration(this.extensionId)) {
       this.logMessage(`onDidChangeConfiguration`, `Configuration change detected, resetting cached exclusions`)
       this.resetCache()
-
-      this.throttled_onDidChangeTextEditorSelection = throttled(
-        this.throttledEventHandler,
-        this.configuration.eventProcessingThrottleDelayMs
-      )
     }
   }
 
@@ -405,6 +429,13 @@ export class Manager {
     const {
       textEditor: { document, selection },
     } = event
+
+    // const selectionText = document.getText(selection)
+    // const activeLine = document.lineAt(selection.active)
+
+    // this.logMessage(`onDidChangeTextEditorSelection`, `Selection Text: ${selectionText}`)
+    // this.logMessage(`onDidChangeTextEditorSelection`, `Line Number: ${activeLine.lineNumber}`)
+    // this.logMessage(`onDidChangeTextEditorSelection`, `Line Text: ${activeLine.text}`)
 
     // If the Document itself is excluded, disable Copilot if necessary and return early.
     if (this.isURIExcluded(document.uri)) {
@@ -454,15 +485,6 @@ export class Manager {
     }
   }
 
-  private readonly throttledEventHandler = (event: TextEditorSelectionChangeEvent) => {
-    this.onDidChangeTextEditorSelection(event)
-  }
-
-  private throttled_onDidChangeTextEditorSelection = throttled(
-    this.throttledEventHandler,
-    this.configuration.eventProcessingThrottleDelayMs
-  )
-
   private resetCache() {
     return (this.cache = {
       excludedGlobs: new Map(),
@@ -500,11 +522,31 @@ export class Manager {
     this.isExtensionDisablingCopilot = !state
   }
 
-  private logMessage(fnName: string, ...args: string[]) {
-    if (!this.configuration.debug) return
-    const argsString = args.length === 1 ? args[0] : `\n\t${args.join('\n\t')}`
-    this.outputChannel.appendLine(`[${fnName}]: ${argsString}`)
-  }
+  private logMessage(fnName: string, ...args: any[]) {
+    if (!this.configuration.debug) {
+      return
+    }
 
+    const strings = args.map((s) => (typeof s === 'string' ? s : String(s)))
+    const outputMsg = strings.length > 1 ? `\n\t${strings.join('\n\t')}` : strings[0]!
+    this.outputChannel.appendLine(`[${fnName}]: ${outputMsg}`)
+    /* const logStrings: string[] = []
+    const otherItems: any[] = []
+    for (let i = 0; i < args.length; i++) {
+      const s = args[i]
+      if (typeof s !== 'string' || otherItems.length > 0) {
+        otherItems.push(s)
+      } else {
+        logStrings.push(s)
+      }
+    }
+
+    const logString = `[${fnName}]: ${logStrings.join('\n\t')}`
+    if (otherItems.length > 0) {
+      console.log(logString, ...otherItems)
+    } else {
+      console.log(logString)
+    } */
+  }
   // #endregion Instance Methods
 }

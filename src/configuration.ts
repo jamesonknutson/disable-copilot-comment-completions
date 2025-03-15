@@ -126,8 +126,10 @@ export type TConfiguration = {
    * specify `Global` here. By omiting this setting, you leave the choice up to VSCode, which will
    * result in the setting being wrote to your workspaces' settings.
    */
-  'disable-copilot-comment-completions.configurationTarget'?: 'Workspace' | 'WorkspaceFolder' | 'Global'
+  'disable-copilot-comment-completions.configurationTarget'?: TConfigurationTarget
 }
+
+export type TConfigurationTarget = 'Workspace' | 'WorkspaceFolder' | 'Global' | null
 
 export type TWorkspaceConfiguration = {
   [K in keyof TConfiguration as K extends `disable-copilot-comment-completions.${infer P}`

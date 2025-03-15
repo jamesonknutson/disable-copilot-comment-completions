@@ -58,6 +58,8 @@ For ease of use with TextMate Scopes, the extension provides an easy way to sele
 
 - `disable-copilot-comment-completions.debug`: Boolean indicating whether or not the extension should log what it's doing to an output channel.
 
+- `disable-copilot-comment-completions.configurationTarget`: Specifies where you want the extension to write it's changes to (defaults to the global/user `settings.json` file). Useful for preventing the extension from erroneously modifying a `.vscode/settings.json` file that's tracked by git.
+
 ## Commands
 
 - `disable-copilot-comment-completions.toggle`: Toggles `disable-copilot-comment-completions.active` state (disables or enables the extension's functionality). You can bind this to a keyboard shortcut if you'd like. You can also disable/enable the extension by clicking the status bar item on the bottom right. (Command Palette: `Toggle Copilot Scope Inhibitor`)
@@ -67,26 +69,22 @@ For ease of use with TextMate Scopes, the extension provides an easy way to sele
 
 ## Known Issues
 
-- None (as of 2.0.0).
+- None (as of 2.0.1).
 
 ## Release Notes
 
 See CHANGELOG.md for more details.
 
-### 1.0.0
 
-- Initial release. Fly, little angel, fly..., fly...
+### 2.0.1
 
-### 1.0.1
+- Added new setting (`disable-copilot-comment-completions.configurationTarget`) which can be used to specify the scope where this extension edits the inline suggestions state. Fixes [Issue #11](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/11).
 
-- Added new commands to force-disable and force-enable the extension
-- [Added new option for user to configure the scopes they want github copilot suggestions to be disabled within](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/1)
-- Added new command to help user pick scopes from the current selection to be disabled within
-- Rewrote the extension using my now vastly superior understanding of Typescript (this was my first attempt at writing in Typescript, I have since gained a minimum of three months experience with it, so hey, it's about time for some house keeping right?), so hopefully it is now some mix of (A) more performant, (B) easier to read, (C) cleaner to edit, and/or (D) less buggy.
+- Changed the default scope of the extension to edit the global (user) `settings.json` file, instead of the workspace's `.vscode/settings.json` file, to address the problem where this extension would spam modifications to a (tracked via git) file. You can revert this functionality by specifying the value of the aforementioned `disable-copilot-comment-completions.configurationTarget` setting (set it to `null`, or `WorkspaceFolder`).
 
-### 1.0.2
+- Updated the extension to use Copilot's new `github.copilot.editor.enableAutoCompletions` setting, instead of `github.copilot.inlineSuggest.enable` (which has been deprecated). This has the added bonus side effect of allowing you to manually trigger inline suggestions via VSCode's `Alt + \` keybinding (command ID: `editor.action.inlineSuggest.trigger`). Fixes [Issue #12](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/12), and [Issue #9](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/9)
 
-- Some minor bug fixes
+- Now, when the extension toggles off inline suggestions, it will also hide any currently-displayed inline suggestions for you as well. This should make the extension feel more intuitive-- whenever you're in an excluded scope/file/whatever, you just won't see inline suggestions. That's the idea anyways.
 
 ### 2.0.0
 
@@ -110,3 +108,19 @@ See CHANGELOG.md for more details.
 - Added an Element to VSCode's Status Bar that indicates the current 'state' of the Extension (whether it is silencing Copilot's suggestions or not), you can hover over it for some limited information as to why it is doing whatever it is doing as well (intended mainly for quick debugging purposes when testing out new settings).
 
 - Improved robustness of caching techniques used internally by the Extension to increase performance
+
+### 1.0.2
+
+- Some minor bug fixes
+
+### 1.0.1
+
+- Added new commands to force-disable and force-enable the extension
+- [Added new option for user to configure the scopes they want github copilot suggestions to be disabled within](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/1)
+- Added new command to help user pick scopes from the current selection to be disabled within
+- Rewrote the extension using my now vastly superior understanding of Typescript (this was my first attempt at writing in Typescript, I have since gained a minimum of three months experience with it, so hey, it's about time for some house keeping right?), so hopefully it is now some mix of (A) more performant, (B) easier to read, (C) cleaner to edit, and/or (D) less buggy.
+
+
+### 1.0.0
+
+- Initial release. Fly, little angel, fly..., fly...
