@@ -122,3 +122,100 @@ declare module 'vscode' {
     } & Readonly<Record<string, string>>
   }
 }
+
+/**
+ * A rule that is applied against the content of the document itself, based around the
+ * cursor's
+ * position in the document, as opposed to being applied against the TextMate Scopes at the
+ * cursor's
+ * position.
+ *
+ * An exclusion rule that uses basic string comparison functions (includes,
+ * startsWith, endsWith, equals) to evaluate against a given string.
+ *
+ * An exclusion rule that uses a regular expression to evaluate against a given string.
+ */
+export interface DisableCopilotCommentCompletionsContentRule {
+  /**
+   * Optional preference of how to compare the rule's `value` property to the thing being
+   * compared.
+   * If omitted, defaults to `includes`.
+   */
+  mode?: 'endsWith' | 'equals' | 'includes' | 'startsWith'
+  type: 'regexp' | 'string'
+  /**
+   * The value to compare against the operand that is being evaluated against this rule.
+   *
+   * The values to pass to the `RegExp` constructor function, e.g: `new RegExp(value.source,
+   * value?.flags)`
+   */
+  value: PurpleValue | string
+  /**
+   * Optional. If specified, this number will be applied as an offset to the line number at
+   * the caret
+   * position, expanding the range whose text content will be tested against the rule
+   * specified in `value`
+   * to have a start line of `<currentLine> - <expandRangeByLines>` and an end line of
+   * `<currentLine> + <expandRangeByLines>`.
+   */
+  expandRangeByLines?: number
+  [property: string]: any
+} /**
+ * The values to pass to the `RegExp` constructor function, e.g: `new RegExp(value.source,
+ * value?.flags)`
+ */
+export interface PurpleValue {
+  /**
+   * Optional RegExp flags (gimsuy) to use as the second argument passed to the `RegExp`
+   * constructor function.
+   */
+  flags?: string
+  /**
+   * The source string to use as the first argument passed to the `RegExp` constructor
+   * function.
+   */
+  source: string
+  [property: string]: any
+}
+
+/**
+ * An exclusion rule that uses basic string comparison functions (includes,
+ * startsWith, endsWith, equals) to evaluate against a given string.
+ *
+ * An exclusion rule that uses a regular expression to evaluate against a given string.
+ */
+export interface DisableCopilotCommentCompletionsTextMateRule {
+  /**
+   * Optional preference of how to compare the rule's `value` property to the thing being
+   * compared.
+   * If omitted, defaults to `includes`.
+   */
+  mode?: 'endsWith' | 'equals' | 'includes' | 'startsWith'
+  type: 'regexp' | 'string'
+  /**
+   * The value to compare against the operand that is being evaluated against this rule.
+   *
+   * The values to pass to the `RegExp` constructor function, e.g: `new RegExp(value.source,
+   * value?.flags)`
+   */
+  value: FluffyValue | string
+  [property: string]: any
+}
+
+/**
+ * The values to pass to the `RegExp` constructor function, e.g: `new RegExp(value.source,
+ * value?.flags)`
+ */
+export interface FluffyValue {
+  /**
+   * Optional RegExp flags (gimsuy) to use as the second argument passed to the `RegExp`
+   * constructor function.
+   */
+  flags?: string
+  /**
+   * The source string to use as the first argument passed to the `RegExp` constructor
+   * function.
+   */
+  source: string
+  [property: string]: any
+}
