@@ -1,8 +1,9 @@
-import { join, normalize } from 'node:path'
 import glob from 'multimatch'
+import { join, normalize } from 'node:path'
 import { Tagged } from 'type-fest'
 import {
   ConfigurationChangeEvent,
+  ConfigurationTarget,
   Disposable,
   LogOutputChannel,
   QuickPickItem,
@@ -21,6 +22,8 @@ import {
 import { MatchRule, RegExpRule, StringRule } from './configuration'
 import { HScopesAPI } from './hscopes'
 import { areRulesEquivalent, convertOldRuleFormat, createPredicateFromRule, isOldRuleFormat } from './rule'
+import { throttled } from './throttle'
+import { getCopilotSettings, setCopilotSettings } from './copilot'
 
 type GlobPattern = Tagged<string, 'GlobPattern'>
 type ExcludedPath = Tagged<string, 'ExcludedPath'>
@@ -44,6 +47,7 @@ export class Manager {
     return {
       debug: cfg.get(`debug`, false) as boolean | undefined,
       active: cfg.get(`active`, true) as boolean,
+      configurationTarget: cfg.get('configurationTarget'),
       eventProcessingThrottleDelayMs: cfg.get(`eventProcessingThrottleDelayMs`, 500),
       globPatterns: cfg.get(`globPatterns`),
       contentRules: cfg.get(`contentRules`),
@@ -122,14 +126,33 @@ export class Manager {
   }
 
   /**
-   * Utility function that sets the state of `github.copilot.inlineSuggest.enable` to the specified
+   * Utility function that sets the state of `github.copilot.editor.enableAutoCompletions` to the specified
    * boolean value.
    *
-   * @param {boolean} state - The desired state of the `github.copilot.inlineSuggest.enable` setting.
+   * @param {boolean} state - The desired state of the `github.copilot.editor.enableAutoCompletions` setting.
    * @return {Promise<void>} A promise that resolves once the update has completed.
    */
   public static async setCopilotState(state: boolean): Promise<void> {
-    return await workspace.getConfiguration(`github.copilot`).update(`inlineSuggest.enable`, state)
+    let target: ConfigurationTarget | boolean | null | undefined = undefined
+
+    switch (Manager.configuration.configurationTarget) {
+      case 'Global':
+        target = ConfigurationTarget.Global
+        break
+      case 'Workspace':
+        target = ConfigurationTarget.Workspace
+        break
+      case 'WorkspaceFolder':
+        target = ConfigurationTarget.WorkspaceFolder
+        break
+      default:
+        target = null
+    }
+
+    await Promise.all([
+      setCopilotSettings('github.copilot.inlineSuggest.enable', state, target),
+      setCopilotSettings('github.copilot.editor.enableAutoCompletions', state, target),
+    ])
   }
 
   private static async getHScopes(): Promise<HScopesAPI> {
@@ -192,22 +215,16 @@ export class Manager {
    * Binds extension event handlers to events, e.g. registers commands, etc.
    */
   private bindEvents() {
-    let prevSelectionFnCallTimestamp = 0
     return [
       commands.registerCommand(`${this.extensionId}.addScopes`, this.onAddScopesCommand, this),
       workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this),
       window.onDidChangeTextEditorSelection((event) => {
-        const delayMs = this.configuration.eventProcessingThrottleDelayMs
-        const now = Date.now()
-        if (delayMs === undefined || delayMs <= 0) {
-          return this.onDidChangeTextEditorSelection(event)
-        }
-
-        if (now - prevSelectionFnCallTimestamp >= delayMs) {
-          prevSelectionFnCallTimestamp = now
-          return this.onDidChangeTextEditorSelection(event)
-        }
-      }),
+        this.logMessage(
+          `window.onDidChangeTextEditorSelection`,
+          `[${Date.now()}] Really did change text editor selection. Calling throttled event.`
+        )
+        return this.throttled_onDidChangeTextEditorSelection(event)
+      }, this),
     ]
   }
 
@@ -371,6 +388,11 @@ export class Manager {
     if (event.affectsConfiguration(this.extensionId)) {
       this.logMessage(`onDidChangeConfiguration`, `Configuration change detected, resetting cached exclusions`)
       this.resetCache()
+
+      this.throttled_onDidChangeTextEditorSelection = throttled(
+        this.throttledEventHandler,
+        this.configuration.eventProcessingThrottleDelayMs
+      )
     }
   }
 
@@ -379,7 +401,7 @@ export class Manager {
    * main logic of the Extension, namely checking to see whether or not the current caret position is in an area where
    * Inline Suggestions should be enabled or disabled, and updates Copilot's settings accordingly if needed.
    */
-  private onDidChangeTextEditorSelection(event: TextEditorSelectionChangeEvent) {
+  private readonly onDidChangeTextEditorSelection = (event: TextEditorSelectionChangeEvent) => {
     const {
       textEditor: { document, selection },
     } = event
@@ -432,6 +454,15 @@ export class Manager {
     }
   }
 
+  private readonly throttledEventHandler = (event: TextEditorSelectionChangeEvent) => {
+    this.onDidChangeTextEditorSelection(event)
+  }
+
+  private throttled_onDidChangeTextEditorSelection = throttled(
+    this.throttledEventHandler,
+    this.configuration.eventProcessingThrottleDelayMs
+  )
+
   private resetCache() {
     return (this.cache = {
       excludedGlobs: new Map(),
@@ -453,10 +484,10 @@ export class Manager {
   }
 
   /**
-   * Utility Function that sets the VSCode Setting value of `github.copilot.inlineSuggest.enable` to
+   * Utility Function that sets the VSCode Setting value of `github.copilot.editor.enableAutoCompletions` to
    * the specified state (and sets the `isExtensionDisablingCopilot` property accordingly).
    *
-   * @param {boolean} state - The desired state of the `github.copilot.inlineSuggest.enable` setting.
+   * @param {boolean} state - The desired state of the `github.copilot.editor.enableAutoCompletions` setting.
    * @return {Promise<void>} A promise that resolves once the update has completed.
    */
   private async updateCopilotState(state: boolean, reason: string): Promise<void> {
