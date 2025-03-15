@@ -10,9 +10,7 @@ export function normalizeStringRule(rule: StringRule): Required<StringRule> {
   }
 }
 
-export function createPredicateFromRule(
-  rule: MatchRule
-): (input: string) => boolean {
+export function createPredicateFromRule(rule: MatchRule): (input: string) => boolean {
   switch (rule.type) {
     case 'string':
       return createPredicateFromStringRule(rule)
@@ -25,11 +23,9 @@ export function areRulesEquivalent(a: MatchRule, b: MatchRule): boolean {
   if (a.type === 'string' && b.type === 'string') {
     const normalizedA = normalizeStringRule(a)
     const normalizedB = normalizeStringRule(b)
-    return (
-      normalizedA.mode === normalizedB.mode &&
-      normalizedA.value === normalizedB.value
-    )
-  } else if (a.type === 'regexp' && b.type === 'regexp') {
+    return normalizedA.mode === normalizedB.mode && normalizedA.value === normalizedB.value
+  }
+  if (a.type === 'regexp' && b.type === 'regexp') {
     return a.value.source === b.value.source && a.value.flags === b.value.flags
   }
 
@@ -50,16 +46,11 @@ export function isOldRuleFormat(input: unknown): input is OldRule {
 export function convertOldRuleFormat(oldRule: OldRule): MatchRule {
   return {
     type: 'regexp',
-    value:
-      typeof oldRule === 'string'
-        ? { source: oldRule }
-        : { source: oldRule.expr, flags: oldRule.flags },
+    value: typeof oldRule === 'string' ? { source: oldRule } : { source: oldRule.expr, flags: oldRule.flags },
   }
 }
 
-function createPredicateFromStringRule(
-  rule: StringRule
-): (input: string) => boolean {
+function createPredicateFromStringRule(rule: StringRule): (input: string) => boolean {
   const normalizedRule = normalizeStringRule(rule)
   switch (normalizedRule.mode) {
     case 'includes':
@@ -73,12 +64,7 @@ function createPredicateFromStringRule(
   }
 }
 
-function createPredicateFromRegExpRule(
-  rule: RegExpRule
-): (input: string) => boolean {
-  const re =
-    typeof rule.value === 'string'
-      ? new RegExp(rule.value)
-      : new RegExp(rule.value.source, rule.value.flags)
+function createPredicateFromRegExpRule(rule: RegExpRule): (input: string) => boolean {
+  const re = typeof rule.value === 'string' ? new RegExp(rule.value) : new RegExp(rule.value.source, rule.value.flags)
   return (input) => re.test(input)
 }

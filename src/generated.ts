@@ -7,10 +7,7 @@ declare module 'vscode' {
     | 'disable-copilot-comment-completions.toggle'
     | 'disable-copilot-comment-completions.addScopes'
   export namespace commands {
-    export function executeCommand<T = unknown>(
-      command: ExtensionCommands,
-      ...rest: any[]
-    ): Thenable<T>
+    export function executeCommand<T = unknown>(command: ExtensionCommands, ...rest: any[]): Thenable<T>
     export function registerCommand(
       command: ExtensionCommands,
       callback: (...args: any[]) => any,
@@ -18,11 +15,7 @@ declare module 'vscode' {
     ): Disposable
     export function registerTextEditorCommand(
       command: ExtensionCommands,
-      callback: (
-        textEditor: TextEditor,
-        edit: TextEditorEdit,
-        ...args: any[]
-      ) => void,
+      callback: (textEditor: TextEditor, edit: TextEditorEdit, ...args: any[]) => void,
       thisArg?: any
     ): Disposable
   }
@@ -38,9 +31,7 @@ declare module 'vscode' {
        * @param section Configuration name, supports _dotted_ names.
        * @return The value `section` denotes or `undefined`.
        */
-      get<K extends keyof Configuration, T extends Configuration[K]>(
-        section: K
-      ): T | undefined
+      get<K extends keyof Configuration, T extends Configuration[K]>(section: K): T | undefined
 
       /**
        * Return a value from this configuration.
@@ -49,10 +40,7 @@ declare module 'vscode' {
        * @param defaultValue A value should be returned when no value could be found, is `undefined`.
        * @return The value `section` denotes or the default.
        */
-      get<K extends keyof Configuration, T extends Configuration[K]>(
-        section: K,
-        defaultValue: T
-      ): T
+      get<K extends keyof Configuration, T extends Configuration[K]>(section: K, defaultValue: T): T
 
       /**
        * Check if this configuration has a certain value.

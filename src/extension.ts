@@ -1,5 +1,5 @@
+import { join, normalize } from 'node:path'
 import glob from 'multimatch'
-import { join, normalize } from 'path'
 import { Opaque } from 'type-fest'
 import {
   ConfigurationChangeEvent,
@@ -18,9 +18,9 @@ import {
   window,
   workspace,
 } from 'vscode'
-import { areRulesEquivalent, convertOldRuleFormat, createPredicateFromRule, isOldRuleFormat } from './rule'
 import { MatchRule, RegExpRule, StringRule } from './configuration'
 import { HScopesAPI } from './hscopes'
+import { areRulesEquivalent, convertOldRuleFormat, createPredicateFromRule, isOldRuleFormat } from './rule'
 
 type GlobPattern = Opaque<string, 'GlobPattern'>
 type ExcludedPath = Opaque<string, 'ExcludedPath'>
@@ -40,7 +40,7 @@ export class Manager {
   // #region Static Props & Accessors
 
   public static get configuration() {
-    const cfg = workspace.getConfiguration(this.extensionId)
+    const cfg = workspace.getConfiguration(Manager.extensionId)
     return {
       debug: cfg.get(`debug`, false) as boolean | undefined,
       active: cfg.get(`active`, true) as boolean,
@@ -129,9 +129,7 @@ export class Manager {
    * @return {Promise<void>} A promise that resolves once the update has completed.
    */
   public static async setCopilotState(state: boolean): Promise<void> {
-    return await workspace
-      .getConfiguration(`github.copilot`)
-      .update(`inlineSuggest.enable`, state)
+    return await workspace.getConfiguration(`github.copilot`).update(`inlineSuggest.enable`, state)
   }
 
   private static async getHScopes(): Promise<HScopesAPI> {
@@ -139,20 +137,14 @@ export class Manager {
       const extension = extensions.getExtension<HScopesAPI>(`draivin.hscopes`)
       if (!extension) {
         const errorMessage = `Required Dependency 'draivin.hscopes' is not installed. Please install it from the VSCode Extensions Marketplace and reload the window.`
-          return window
-            .showErrorMessage(errorMessage)
-            .then(() => reject(errorMessage))
+        return window.showErrorMessage(errorMessage).then(() => reject(errorMessage))
       }
 
       return extension.activate().then(
         (api) => resolve(api),
-          (err) =>
-            window
-              .showErrorMessage(`Error loading 'draivin.hscopes': ${err}`)
-              .then(() => reject(err))
+        (err) => window.showErrorMessage(`Error loading 'draivin.hscopes': ${err}`).then(() => reject(err))
       )
-      }
-    ))
+    }))
   }
 
   // #endregion Static Methods
@@ -162,15 +154,8 @@ export class Manager {
   private constructor(opts: IManager) {
     this.hscopes = opts.hscopes
     this.statusBarItem = this.createStatusBarItem()
-    this.outputChannel = window.createOutputChannel(
-      `Silence Github Copilot Suggestions`,
-      { log: true }
-    )
-    this.disposable = Disposable.from(
-      ...this.bindEvents(),
-      this.statusBarItem,
-      this.outputChannel
-    )
+    this.outputChannel = window.createOutputChannel(`Silence Github Copilot Suggestions`, { log: true })
+    this.disposable = Disposable.from(...this.bindEvents(), this.statusBarItem, this.outputChannel)
     this.resetCache()
   }
 
@@ -209,18 +194,16 @@ export class Manager {
   private bindEvents() {
     let prevSelectionFnCallTimestamp = 0
     return [
-      commands.registerCommand(
-        `${this.extensionId}.addScopes`,
-        this.onAddScopesCommand,
-        this
-      ),
+      commands.registerCommand(`${this.extensionId}.addScopes`, this.onAddScopesCommand, this),
       workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this),
       window.onDidChangeTextEditorSelection((event) => {
         const delayMs = this.configuration.eventProcessingThrottleDelayMs
         const now = Date.now()
         if (delayMs === undefined || delayMs <= 0) {
           return this.onDidChangeTextEditorSelection(event)
-        } else if (now - prevSelectionFnCallTimestamp >= delayMs) {
+        }
+
+        if (now - prevSelectionFnCallTimestamp >= delayMs) {
           prevSelectionFnCallTimestamp = now
           return this.onDidChangeTextEditorSelection(event)
         }
@@ -253,17 +236,11 @@ export class Manager {
       return normalize(matcher).replace(/\\/g, '/') as GlobPattern
     }
 
-    return normalize(join(workspaceFolder.uri.fsPath, matcher)).replace(
-      /\\/g,
-      '/'
-    ) as GlobPattern
+    return normalize(join(workspaceFolder.uri.fsPath, matcher)).replace(/\\/g, '/') as GlobPattern
   }
 
   private createStatusBarItem() {
-    const statusBarItem = window.createStatusBarItem(
-      `${this.extensionId}.statusBarItem`,
-      StatusBarAlignment.Right
-    )
+    const statusBarItem = window.createStatusBarItem(`${this.extensionId}.statusBarItem`, StatusBarAlignment.Right)
     statusBarItem.name = `GH Copilot Suggestions`
     statusBarItem.tooltip = `GH Copilot Suggestions Enabled`
     statusBarItem.text = `$(check) Suggestions Enabled`
@@ -279,10 +256,7 @@ export class Manager {
    * @param {Selection} selection - The Selection to check for excluded TextMate Scopes.
    * @return {boolean} Whether or not Inline Suggestions should be disabled
    */
-  private isSelectionContentExcluded(
-    document: TextDocument,
-    selection: Selection
-  ): boolean {
+  private isSelectionContentExcluded(document: TextDocument, selection: Selection): boolean {
     return this.cache.contentRules.some((rule) => rule(document, selection))
   }
 
@@ -294,13 +268,8 @@ export class Manager {
    * @param {Selection} selection - The Selection to check for excluded TextMate Scopes.
    * @return {boolean} Whether or not Inline Suggestions should be disabled
    */
-  private isSelectionScopeExcluded(
-    document: TextDocument,
-    selection: Selection
-  ): boolean {
-    return (
-      this.hscopes.getScopeAt(document, selection.active)?.scopes ?? []
-    ).some((scope) => {
+  private isSelectionScopeExcluded(document: TextDocument, selection: Selection): boolean {
+    return (this.hscopes.getScopeAt(document, selection.active)?.scopes ?? []).some((scope) => {
       const cachedResult = this.cache.excludedScopes.get(scope)
       if (typeof cachedResult !== 'undefined') {
         return cachedResult
@@ -350,23 +319,12 @@ export class Manager {
       )
 
     const { document, selection } = editor
-    const caretScopes = [
-      ...new Set(
-        this.hscopes.getScopeAt(document, selection.active)?.scopes ?? []
-      ),
-    ]
-    if (!caretScopes.length)
-      return await window.showErrorMessage(
-        `No scopes found at the current selection.`
-      )
+    const caretScopes = [...new Set(this.hscopes.getScopeAt(document, selection.active)?.scopes ?? [])]
+    if (!caretScopes.length) return await window.showErrorMessage(`No scopes found at the current selection.`)
 
     const { regexp, string } = this.configuration.textMateRules.reduce(
       (acc, rule) => {
-        if (
-          typeof rule === 'object' &&
-          'type' in rule &&
-          rule.type === 'string'
-        ) {
+        if (typeof rule === 'object' && 'type' in rule && rule.type === 'string') {
           acc.string.push(rule)
         } else {
           acc.regexp.push(rule)
@@ -379,13 +337,9 @@ export class Manager {
       }
     )
 
-    const stringRulesNotAtCaret = string.filter(
-      (item) => item.type === 'string' && !caretScopes.includes(item.value)
-    )
-    const stringRulesAtCaret = string.filter(
-      (item) => item.type === 'string' && caretScopes.includes(item.value)
-    )
-    const finalRules = [ ...regexp, ...stringRulesNotAtCaret ]
+    const stringRulesNotAtCaret = string.filter((item) => item.type === 'string' && !caretScopes.includes(item.value))
+    const stringRulesAtCaret = string.filter((item) => item.type === 'string' && caretScopes.includes(item.value))
+    const finalRules = [...regexp, ...stringRulesNotAtCaret]
 
     const quickPickItems = caretScopes.map(
       (scope): QuickPickItem => ({
@@ -406,9 +360,7 @@ export class Manager {
       finalRules.push({ type: 'string', value: item.label, mode: 'equals' })
     })
 
-    return await workspace
-      .getConfiguration(this.extensionId)
-      .update(`textMateRules`, finalRules)
+    return await workspace.getConfiguration(this.extensionId).update(`textMateRules`, finalRules)
   }
 
   /**
@@ -417,10 +369,7 @@ export class Manager {
    */
   private onDidChangeConfiguration(event: ConfigurationChangeEvent) {
     if (event.affectsConfiguration(this.extensionId)) {
-      this.logMessage(
-        `onDidChangeConfiguration`,
-        `Configuration change detected, resetting cached exclusions`
-      )
+      this.logMessage(`onDidChangeConfiguration`, `Configuration change detected, resetting cached exclusions`)
       this.resetCache()
     }
   }
@@ -430,9 +379,7 @@ export class Manager {
    * main logic of the Extension, namely checking to see whether or not the current caret position is in an area where
    * Inline Suggestions should be enabled or disabled, and updates Copilot's settings accordingly if needed.
    */
-  private onDidChangeTextEditorSelection(
-    event: TextEditorSelectionChangeEvent
-  ) {
+  private onDidChangeTextEditorSelection(event: TextEditorSelectionChangeEvent) {
     const {
       textEditor: { document, selection },
     } = event
@@ -489,20 +436,13 @@ export class Manager {
     return (this.cache = {
       excludedGlobs: new Map(),
       excludedScopes: new Map(),
-      textMateRules: this.configuration.textMateRules.map((rule) =>
-        createPredicateFromRule(rule)
-      ),
+      textMateRules: this.configuration.textMateRules.map((rule) => createPredicateFromRule(rule)),
       contentRules: (this.configuration.contentRules ?? []).map((rule) => {
         const predicate = createPredicateFromRule(rule)
         return (document: TextDocument, selection: Selection) => {
-          const startRange = document.lineAt(
-            Math.max(selection.active.line - (rule.expandRangeByLines ?? 0), 0)
-          ).range
+          const startRange = document.lineAt(Math.max(selection.active.line - (rule.expandRangeByLines ?? 0), 0)).range
           const endRange = document.lineAt(
-            Math.min(
-              selection.active.line + (rule.expandRangeByLines ?? 0),
-              document.lineCount - 1
-            )
+            Math.min(selection.active.line + (rule.expandRangeByLines ?? 0), document.lineCount - 1)
           ).range
           const range = startRange.union(endRange)
           const text = document.getText(range)
@@ -519,21 +459,12 @@ export class Manager {
    * @param {boolean} state - The desired state of the `github.copilot.inlineSuggest.enable` setting.
    * @return {Promise<void>} A promise that resolves once the update has completed.
    */
-  private async updateCopilotState(
-    state: boolean,
-    reason: string
-  ): Promise<void> {
-    this.logMessage(
-      `updateCopilotState`,
-      `Setting Copilot Inline Suggestions to: ${state}`,
-      `Reason: ${reason}`
-    )
+  private async updateCopilotState(state: boolean, reason: string): Promise<void> {
+    this.logMessage(`updateCopilotState`, `Setting Copilot Inline Suggestions to: ${state}`, `Reason: ${reason}`)
     this.statusBarItem.tooltip = state
       ? `GH Copilot Suggestions Enabled`
       : `GH Copilot Suggestions Disabled (reason: ${reason})`
-    this.statusBarItem.text = state
-      ? `$(check) Suggestions Enabled`
-      : `$(x) Suggestions Disabled`
+    this.statusBarItem.text = state ? `$(check) Suggestions Enabled` : `$(x) Suggestions Disabled`
     await Manager.setCopilotState(state)
     this.isExtensionDisablingCopilot = !state
   }
