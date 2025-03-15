@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import './global'
 import { Manager } from './extension'
 
 export async function activate(context: vscode.ExtensionContext) {

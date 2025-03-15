@@ -26,5 +26,15 @@
   "tabWidth": 2,
   "trailingComma": "all",
   "tsdoc": true,
-  "useTabs": false
+  "useTabs": false,
+  "overrides": [
+    {
+      "files": [
+        "*.json"
+      ],
+      "options": {
+        "parser": "json"
+      }
+    }
+  ]
 }

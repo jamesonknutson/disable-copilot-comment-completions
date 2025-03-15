@@ -1,6 +1,6 @@
 import { join, normalize } from 'node:path'
 import glob from 'multimatch'
-import { Opaque } from 'type-fest'
+import { Tagged } from 'type-fest'
 import {
   ConfigurationChangeEvent,
   Disposable,
@@ -22,8 +22,8 @@ import { MatchRule, RegExpRule, StringRule } from './configuration'
 import { HScopesAPI } from './hscopes'
 import { areRulesEquivalent, convertOldRuleFormat, createPredicateFromRule, isOldRuleFormat } from './rule'
 
-type GlobPattern = Opaque<string, 'GlobPattern'>
-type ExcludedPath = Opaque<string, 'ExcludedPath'>
+type GlobPattern = Tagged<string, 'GlobPattern'>
+type ExcludedPath = Tagged<string, 'ExcludedPath'>
 
 type ManagerCache = {
   excludedGlobs: Map<ExcludedPath, boolean>
