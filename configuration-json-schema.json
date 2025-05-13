@@ -1,0 +1,212 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "disable-copilot-comment-completions.active": {
+            "default": true,
+            "description": "Whether or not you want the Extension to be enabled. You can also just uninstall\r\nthe extension, but hey, whatever floats your boat boss.",
+            "type": "boolean"
+        },
+        "disable-copilot-comment-completions.configurationTarget": {
+            "anyOf": [
+                {
+                    "enum": [
+                        "Global",
+                        "Workspace",
+                        "WorkspaceFolder"
+                    ],
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "Specifies where to save the changes to the `github.copilot.editor.enableAutoCompletions`\r\nsetting to. By default, VSCode will save the settings to the `WorkspaceFolder` settings if the\r\nconfiguration is resource-specific, otherwise it will write to the `Workspace` settings. If you\r\nwant the extension to write it's changes to the global/user `settings.json` file, you should\r\nspecify `Global` here. By omiting this setting, you leave the choice up to VSCode, which will\r\nresult in the setting being wrote to your workspaces' settings."
+        },
+        "disable-copilot-comment-completions.contentRules": {
+            "description": "An (optional) array of Rules to apply against the content of the document itself,\r\nbased around the cursor's position.",
+            "items": {
+                "anyOf": [
+                    {
+                        "allOf": [
+                            {
+                                "description": "An exclusion rule that uses basic string comparison functions (includes, startsWith,\r\nendsWith, equals) to evaluate against a given string.",
+                                "properties": {
+                                    "mode": {
+                                        "default": "'includes'",
+                                        "description": "Optional preference of how to compare the rule's `value` property to the thing\r\nbeing compared. If omitted, defaults to `includes`.",
+                                        "enum": [
+                                            "endsWith",
+                                            "equals",
+                                            "includes",
+                                            "startsWith"
+                                        ],
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "const": "string",
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "description": "The value to compare against the operand that is being evaluated against this\r\nrule.",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "type",
+                                    "value"
+                                ],
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "expandRangeByLines": {
+                                        "description": "Optional. If specified, this number will be applied as an offset to the line\r\nnumber at the caret position, expanding the range whose text content will be tested against the\r\nrule specified in `value` to have a start line of `<currentLine> - <expandRangeByLines>` and an\r\nend line of `<currentLine> + <expandRangeByLines>`.",
+                                        "type": "number"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    {
+                        "allOf": [
+                            {
+                                "description": "An exclusion rule that uses a regular expression to evaluate against a given string.",
+                                "properties": {
+                                    "type": {
+                                        "const": "regexp",
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "description": "The values to pass to the `RegExp` constructor function, e.g: `new\r\nRegExp(value.source, value?.flags)`",
+                                        "properties": {
+                                            "flags": {
+                                                "description": "Optional RegExp flags (gimsuy) to use as the second argument passed to the\r\n`RegExp` constructor function.",
+                                                "type": "string"
+                                            },
+                                            "source": {
+                                                "description": "The source string to use as the first argument passed to the `RegExp`\r\nconstructor function.",
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "source"
+                                        ],
+                                        "type": "object"
+                                    }
+                                },
+                                "required": [
+                                    "type",
+                                    "value"
+                                ],
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "expandRangeByLines": {
+                                        "description": "Optional. If specified, this number will be applied as an offset to the line\r\nnumber at the caret position, expanding the range whose text content will be tested against the\r\nrule specified in `value` to have a start line of `<currentLine> - <expandRangeByLines>` and an\r\nend line of `<currentLine> + <expandRangeByLines>`.",
+                                        "type": "number"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        ]
+                    }
+                ],
+                "description": "A rule that is applied against the content of the document itself, based around the\r\ncursor's position in the document, as opposed to being applied against the TextMate Scopes at the\r\ncursor's position."
+            },
+            "type": "array"
+        },
+        "disable-copilot-comment-completions.debug": {
+            "description": "When set to true, the Extension will create an Output Channel and log information\r\nabout what it's doing.",
+            "type": "boolean"
+        },
+        "disable-copilot-comment-completions.eventProcessingThrottleDelayMs": {
+            "default": 500,
+            "description": "This extension performs relatively expensive computations when processing the\r\n[onDidChangeTextEditorSelection](https://code.visualstudio.com/api/references/vscode-api#:~:text=onDidChangeTextEditorSelection%3A%20Event%3CTextEditorSelectionChangeEvent%3E)\r\nevent.\r\n\r\nThis setting allows you to throttle the rate at which these computations are performed. The\r\ndefault value of `500` means that the computations will be performed at most once every 500ms.\r\nSet this to `0` to disable throttling.\r\n\r\nIf throttling is disabled, you may find that this Extension slows VSCode down during certain\r\noperations, especially inside of large files (as this Extension has to tokenize the file when\r\nit is changed, a bigger file means more processing to figure out what scopes are at the current\r\nCaret position).",
+            "type": "number"
+        },
+        "disable-copilot-comment-completions.globPatterns": {
+            "description": "An (optional) array of glob patterns to match against the path of active file. If\r\nany of the globs defined here matches the active file, Inline Suggestions will be inhibited.\r\n\r\nUses [multimatch](https://www.npmjs.com/package/multimatch) under the hood, so any valid\r\nmultimatch pattern will work here.",
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
+        "disable-copilot-comment-completions.textMateRules": {
+            "default": "[{ type: 'string'; value: 'comment'; mode: 'includes' }]",
+            "description": "An array of rules to apply against the TextMate Scopes at the cursor position. If\r\nany rule matches, Copilot's inline suggestions will be toggled off.",
+            "items": {
+                "anyOf": [
+                    {
+                        "description": "An exclusion rule that uses basic string comparison functions (includes, startsWith,\r\nendsWith, equals) to evaluate against a given string.",
+                        "properties": {
+                            "mode": {
+                                "default": "'includes'",
+                                "description": "Optional preference of how to compare the rule's `value` property to the thing\r\nbeing compared. If omitted, defaults to `includes`.",
+                                "enum": [
+                                    "endsWith",
+                                    "equals",
+                                    "includes",
+                                    "startsWith"
+                                ],
+                                "type": "string"
+                            },
+                            "type": {
+                                "const": "string",
+                                "type": "string"
+                            },
+                            "value": {
+                                "description": "The value to compare against the operand that is being evaluated against this\r\nrule.",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "value"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "description": "An exclusion rule that uses a regular expression to evaluate against a given string.",
+                        "properties": {
+                            "type": {
+                                "const": "regexp",
+                                "type": "string"
+                            },
+                            "value": {
+                                "description": "The values to pass to the `RegExp` constructor function, e.g: `new\r\nRegExp(value.source, value?.flags)`",
+                                "properties": {
+                                    "flags": {
+                                        "description": "Optional RegExp flags (gimsuy) to use as the second argument passed to the\r\n`RegExp` constructor function.",
+                                        "type": "string"
+                                    },
+                                    "source": {
+                                        "description": "The source string to use as the first argument passed to the `RegExp`\r\nconstructor function.",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "source"
+                                ],
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "value"
+                        ],
+                        "type": "object"
+                    }
+                ]
+            },
+            "type": "array"
+        }
+    },
+    "required": [
+        "disable-copilot-comment-completions.active",
+        "disable-copilot-comment-completions.textMateRules"
+    ],
+    "type": "object"
+}
+

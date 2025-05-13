@@ -1,0 +1,9 @@
+{
+  "include": [
+    "./esbuild.mts"
+  ],
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ESNext",
+  }
+}
