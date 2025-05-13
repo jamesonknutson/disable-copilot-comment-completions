@@ -4,6 +4,10 @@ All notable changes to the "disable-copilot-comment-completions" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [2.0.2]
+
+- Updated the extension to use the `github.copilot.enable` object in lieu of the `enableAutoCompletions` setting
+
 ## [2.0.1]
 
 - Added new setting (`disable-copilot-comment-completions.configurationTarget`) which can be used to specify the scope where this extension edits the inline suggestions state. Fixes [Issue #11](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/11).
