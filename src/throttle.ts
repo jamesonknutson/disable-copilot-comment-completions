@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-this-alias */
 export function throttled<T extends (...args: any[]) => any>(fn: T, delayMilliseconds: number) {
   let timeoutId: NodeJS.Timeout | undefined = undefined
   let result: ReturnType<T> | undefined = undefined

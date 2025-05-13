@@ -1,6 +1,9 @@
-import glob from 'multimatch'
+/* eslint-disable no-async-promise-executor */
+
 import { join, normalize } from 'node:path'
+import glob from 'multimatch'
 import { Tagged } from 'type-fest'
+import type { ConfigurationScope } from 'vscode'
 import {
   ConfigurationChangeEvent,
   ConfigurationTarget,
@@ -20,10 +23,9 @@ import {
   workspace,
 } from 'vscode'
 import { MatchRule, RegExpRule, StringRule, type TConfigurationTarget } from './configuration'
+import { setCopilotConfigState } from './copilot'
 import { HScopesAPI } from './hscopes'
 import { areRulesEquivalent, convertOldRuleFormat, createPredicateFromRule, isOldRuleFormat } from './rule'
-import { throttled } from './throttle'
-import { getCopilotSettings, setCopilotSettings } from './copilot'
 
 type GlobPattern = Tagged<string, 'GlobPattern'>
 type ExcludedPath = Tagged<string, 'ExcludedPath'>
@@ -40,8 +42,6 @@ interface IManager {
 }
 
 export class Manager {
-  // #region Static Props & Accessors
-
   public static get configuration() {
     const cfg = workspace.getConfiguration(Manager.extensionId)
     return {
@@ -70,10 +70,6 @@ export class Manager {
 
   private static _hscopes?: HScopesAPI
   private static _instance?: Manager
-
-  // #endregion Static Props & Accessors
-
-  // #region Static Methods
 
   public static async convertOldConfiguration() {
     const typedConfig = workspace.getConfiguration(`disable-copilot-comment-completions`)
@@ -125,41 +121,8 @@ export class Manager {
     }))
   }
 
-  /**
-   * Utility function that sets the state of `github.copilot.editor.enableAutoCompletions` to the specified
-   * boolean value.
-   *
-   * @param {boolean} state - The desired state of the `github.copilot.editor.enableAutoCompletions` setting.
-   * @return {Promise<void>} A promise that resolves once the update has completed.
-   */
-  public static async setCopilotState(state: boolean): Promise<void> {
-    let target: ConfigurationTarget | null = null
-    switch (Manager.configuration.configurationTarget) {
-      case 'Global':
-        target = ConfigurationTarget.Global
-        break
-      case 'Workspace':
-        target = ConfigurationTarget.Workspace
-        break
-      case 'WorkspaceFolder':
-        target = ConfigurationTarget.WorkspaceFolder
-        break
-      default:
-        target = null
-    }
-
-    const thenables = [
-      // setCopilotSettings('github.copilot.inlineSuggest.enable', state, target),
-      setCopilotSettings('github.copilot.editor.enableAutoCompletions', state, target),
-    ]
-
-    if (state === false) {
-      thenables.push(commands.executeCommand(`editor.action.inlineSuggest.hide`))
-    }
-
-    await Promise.all(thenables)
-
-    // console.debug(`Finished executing thenables:`, results)
+  private createLogger = (fnName: string) => {
+    return (...args: any[]) => this.logMessage(fnName, ...args)
   }
 
   private static async getHScopes(): Promise<HScopesAPI> {
@@ -177,10 +140,6 @@ export class Manager {
     }))
   }
 
-  // #endregion Static Methods
-
-  // #region Constructors
-
   private constructor(opts: IManager) {
     this.hscopes = opts.hscopes
     this.statusBarItem = this.createStatusBarItem()
@@ -188,10 +147,6 @@ export class Manager {
     this.disposable = Disposable.from(...this.bindEvents(), this.statusBarItem, this.outputChannel)
     this.resetCache()
   }
-
-  // #endregion Constructors
-
-  // #region Instance Props & Accessors
 
   private readonly hscopes: HScopesAPI
   private readonly outputChannel: LogOutputChannel
@@ -213,10 +168,6 @@ export class Manager {
   private get textMateRules() {
     return this.cache.textMateRules
   }
-
-  // #endregion Instance Props & Accessors
-
-  // #region Instance Methods
 
   /**
    * Binds extension event handlers to events, e.g. registers commands, etc.
@@ -444,7 +395,7 @@ export class Manager {
         `Copilot should be silenced, glob pattern exclusion rule found for URI: ${document.uri.fsPath}`
       )
       if (!this.isExtensionDisablingCopilot) {
-        this.updateCopilotState(false, `Excluded URI`)
+        this.updateCopilotState(false, `Excluded URI`, document)
       }
       return
     }
@@ -457,7 +408,7 @@ export class Manager {
         `Copilot should be silenced, textmate exclusion rule found at cursor`
       )
       if (!this.isExtensionDisablingCopilot) {
-        this.updateCopilotState(false, `Excluded Scope`)
+        this.updateCopilotState(false, `Excluded Scope`, document)
       }
       return
     }
@@ -468,7 +419,7 @@ export class Manager {
         `Copilot should be silenced, content exclusion rule found at cursor`
       )
       if (!this.isExtensionDisablingCopilot) {
-        this.updateCopilotState(false, `Excluded Content`)
+        this.updateCopilotState(false, `Excluded Content`, document)
       }
       return
     }
@@ -481,7 +432,7 @@ export class Manager {
     // If we've made it this far, none of our exclusions matched, so we can
     // re-enable Copilot if necessary.
     if (this.isExtensionDisablingCopilot) {
-      this.updateCopilotState(true, `No exclusions matched.`)
+      this.updateCopilotState(true, `No exclusions matched.`, document)
     }
   }
 
@@ -512,13 +463,54 @@ export class Manager {
    * @param {boolean} state - The desired state of the `github.copilot.editor.enableAutoCompletions` setting.
    * @return {Promise<void>} A promise that resolves once the update has completed.
    */
-  private async updateCopilotState(state: boolean, reason: string): Promise<void> {
-    this.logMessage(`updateCopilotState`, `Setting Copilot Inline Suggestions to: ${state}`, `Reason: ${reason}`)
+  public async updateCopilotState(
+    state: boolean,
+    reason: string,
+    scope: ConfigurationScope | undefined | null
+  ): Promise<void> {
+    const log = this.createLogger('updateCopilotState')
+    log(`Setting Copilot Inline Suggestions to: ${state}, Reason: ${reason}`)
+
     this.statusBarItem.tooltip = state
       ? `GH Copilot Suggestions Enabled`
       : `GH Copilot Suggestions Disabled (reason: ${reason})`
     this.statusBarItem.text = state ? `$(check) Suggestions Enabled` : `$(x) Suggestions Disabled`
-    await Manager.setCopilotState(state)
+
+    let target: ConfigurationTarget | null = null
+    switch (Manager.configuration.configurationTarget) {
+      case 'Global':
+        target = ConfigurationTarget.Global
+        await log(`Using configuration target: Global`)
+        break
+      case 'Workspace':
+        target = ConfigurationTarget.Workspace
+        await log(`Using configuration target: Workspace`)
+        break
+      case 'WorkspaceFolder':
+        target = ConfigurationTarget.WorkspaceFolder
+        await log(`Using configuration target: WorkspaceFolder`)
+        break
+      default:
+        await log(`Using configuration target: null`)
+        target = null
+    }
+
+    // To set the copilot state, we now need to directly edit the value of:
+    // - github.copilot.enable[<current language id>]: <boolean>
+
+    log(`Adding 'setCopilotConfigState(state, { target, scope })' with state ${state} to call stack.`)
+    const thenables = [
+      // setCopilotSettings('github.copilot.inlineSuggest.enable', state, target),
+      // setCopilotSettings('github.copilot.editor.enableAutoCompletions', state, target),
+      setCopilotConfigState(state, { target, scope }),
+    ]
+
+    if (state === false) {
+      log(`Adding 'commands.executeCommand("editor.action.inlineSuggest.hide")' to call stack`)
+      thenables.push(commands.executeCommand(`editor.action.inlineSuggest.hide`))
+    }
+
+    await Promise.all(thenables)
     this.isExtensionDisablingCopilot = !state
   }
 
@@ -530,23 +522,5 @@ export class Manager {
     const strings = args.map((s) => (typeof s === 'string' ? s : String(s)))
     const outputMsg = strings.length > 1 ? `\n\t${strings.join('\n\t')}` : strings[0]!
     this.outputChannel.appendLine(`[${fnName}]: ${outputMsg}`)
-    /* const logStrings: string[] = []
-    const otherItems: any[] = []
-    for (let i = 0; i < args.length; i++) {
-      const s = args[i]
-      if (typeof s !== 'string' || otherItems.length > 0) {
-        otherItems.push(s)
-      } else {
-        logStrings.push(s)
-      }
-    }
-
-    const logString = `[${fnName}]: ${logStrings.join('\n\t')}`
-    if (otherItems.length > 0) {
-      console.log(logString, ...otherItems)
-    } else {
-      console.log(logString)
-    } */
   }
-  // #endregion Instance Methods
 }

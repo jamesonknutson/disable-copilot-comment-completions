@@ -11,5 +11,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
   console.log(`[${Manager.extensionId}]: Entry point deactivate function reached`)
-  await Manager.setCopilotState(true)
+  const instance = await Manager.getInstance()
+  await instance.updateCopilotState(true, 'Extension deactivated', null)
 }
