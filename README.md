@@ -59,6 +59,25 @@ Some example use cases / configurations include:
   ]
 }
 ```
+
+[- disable copilot completions also in triple quoted python docstrings, which can be used as comments but are not considered a multiline comment by vscode)](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/15)
+```json
+{
+"disable-copilot-comment-completions.textMateRules": [
+    {
+      "type": "string",
+      "value": "string.quoted.docstring",
+      "mode": "includes"
+    },
+    {
+      "type": "string",
+      "value": "string.quoted.multi.python",
+      "mode": "includes",
+    }
+  ],
+}
+```
+
 - If you have further use case examples, please submit an issue so I can include it here
 
 The extension works by listening to VSCode's [`onDidChangeTextEditorSelection` event](https://code.visualstudio.com/api/references/vscode-api#:~:text=onDidChangeTextEditorSelection) and iterating over all the configured 'exclusion rules' to determine whether or not copilot's inline suggestions should be artificially disabled by the extension at the current position. If so, the extension will disable inline suggestions until the inverse is true (none of the exclusion rules match), at which point inline suggestions will be enabled again.
