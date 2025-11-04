@@ -13,16 +13,6 @@ export interface GetCopilotStateOptions extends Pick<CopilotStateOptions, 'scope
   config?: WorkspaceConfiguration
 }
 
-function getValue(languageId: string): unknown {
-  const record = workspace.getConfiguration('github.copilot').get('enable')
-  if (typeof record === 'object' && record !== null) {
-    if (languageId in record) {
-      // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expression o...
-      return record[languageId]
-    }
-  }
-}
-
 export function getCopilotConfigState({ scope, config }: GetCopilotStateOptions = {}) {
   const usingConfig = config ? config : workspace.getConfiguration('github.copilot', scope)
   const languageId = scope && 'languageId' in scope ? scope.languageId : null
