@@ -469,6 +469,10 @@ export class Manager {
     scope: ConfigurationScope | undefined | null
   ): Promise<void> {
     const log = this.createLogger('updateCopilotState')
+    if (!Manager.configuration.active) {
+      log(`Extension is inactive, skipping updateCopilotState call.`)
+      return
+    }
     log(`Setting Copilot Inline Suggestions to: ${state}, Reason: ${reason}`)
 
     this.statusBarItem.tooltip = state
