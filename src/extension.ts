@@ -177,6 +177,9 @@ export class Manager {
 
     return [
       commands.registerCommand(`${this.extensionId}.addScopes`, this.onAddScopesCommand, this),
+      commands.registerCommand(`${this.extensionId}.toggle`, this.toggle, this),
+      commands.registerCommand(`${this.extensionId}.enable`, this.enable, this),
+      commands.registerCommand(`${this.extensionId}.disable`, this.disable, this),
       workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this),
       /* window.onDidChangeActiveTextEditor((event) => {
         if (!event) {
@@ -358,6 +361,25 @@ export class Manager {
     })
 
     return await workspace.getConfiguration(this.extensionId).update(`textMateRules`, finalRules)
+  }
+
+  private toggle() {
+    const currentState = this.configuration.active
+    return workspace
+      .getConfiguration(this.extensionId)
+      .update(`active`, !currentState, ConfigurationTarget.Global)
+  }
+
+  private enable() {
+    return workspace
+      .getConfiguration(this.extensionId)
+      .update(`active`, true, ConfigurationTarget.Global)
+  }
+
+  private disable() {
+    return workspace
+      .getConfiguration(this.extensionId)
+      .update(`active`, false, ConfigurationTarget.Global)
   }
 
   /**
