@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 export function throttled<T extends (...args: any[]) => any>(fn: T, delayMilliseconds: number) {
-  let timeoutId: NodeJS.Timeout | undefined = undefined
-  let result: ReturnType<T> | undefined = undefined
+  let timeoutId: NodeJS.Timeout | undefined
+  let result: ReturnType<T> | undefined
   let executed = false
-  let timeoutArguments: Parameters<T> | undefined = undefined
-  let timeoutThis: any | undefined = undefined
-  let timeoutArgumentsTimestamp: number | undefined = undefined
-  let timestamp: number | undefined = undefined
+  let timeoutArguments: Parameters<T> | undefined
+  let timeoutThis: any | undefined
+  let _timeoutArgumentsTimestamp: number | undefined
+  let timestamp: number | undefined
 
   function runFn(this: any, ...args: Parameters<T>): ReturnType<T> {
     result = fn.apply(this, args)
@@ -40,7 +40,7 @@ export function throttled<T extends (...args: any[]) => any>(fn: T, delayMillise
     const now = Date.now()
     timeoutThis = this
     timeoutArguments = args
-    timeoutArgumentsTimestamp = now
+    _timeoutArgumentsTimestamp = now
 
     // Check to see if we should delay this execution.
     const elapsedMs = now - (timestamp ?? 0)

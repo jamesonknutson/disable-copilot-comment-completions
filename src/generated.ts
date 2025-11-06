@@ -1,4 +1,4 @@
-import { TWorkspaceConfiguration as Configuration } from './configuration'
+import type { TWorkspaceConfiguration as Configuration } from './configuration'
 
 declare module 'vscode' {
   type ExtensionCommands =
@@ -217,5 +217,6 @@ export interface FluffyValue {
    * function.
    */
   source: string
+
   [property: string]: any
 }

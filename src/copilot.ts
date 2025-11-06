@@ -1,6 +1,4 @@
-import type { WorkspaceConfiguration } from 'vscode'
-import type { ConfigurationScope } from 'vscode'
-import { ConfigurationTarget } from 'vscode'
+import type { ConfigurationScope, ConfigurationTarget, WorkspaceConfiguration } from 'vscode'
 import { workspace } from 'vscode'
 
 export interface CopilotStateOptions {

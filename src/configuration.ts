@@ -90,7 +90,8 @@ export type TConfiguration = {
    * @description An array of rules to apply against the TextMate Scopes at the cursor position. If
    * any rule matches, Copilot's inline suggestions will be toggled off.
    *
-   * @default [{ type: 'string'; value: 'comment'; mode: 'includes' }]
+   * @default
+   * [{ type: 'string'; value: 'comment'; mode: 'includes' }]
    *
    * @required
    */
