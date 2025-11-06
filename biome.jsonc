@@ -1,14 +1,15 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.4/schema.json",
   "files": {
-    "ignore": [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/out/**",
-      "*.d.ts",
-      "**/*.js",
-      "**/*Untitled*",
-      "**/build/**"
+    "includes": [
+      "**",
+      "!**/node_modules/**",
+      "!**/dist/**",
+      "!**/out/**",
+      "!**/*.d.ts",
+      "!**/*.js",
+      "!**/*Untitled*",
+      "!**/build/**"
     ],
     "ignoreUnknown": true,
     "maxSize": 1000000000000
@@ -66,7 +67,5 @@
       }
     }
   },
-  "organizeImports": {
-    "enabled": true
-  }
+  "assist": { "actions": { "source": { "organizeImports": "on" } } }
 }

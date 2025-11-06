@@ -2,34 +2,34 @@
 
 import { join, normalize } from "node:path";
 import glob from "multimatch";
-import { Tagged } from "type-fest";
+import type { Tagged } from "type-fest";
 import type { ConfigurationScope } from "vscode";
 import {
-	ConfigurationChangeEvent,
+	type ConfigurationChangeEvent,
 	ConfigurationTarget,
 	commands,
 	Disposable,
 	extensions,
-	LogOutputChannel,
-	QuickPickItem,
-	Selection,
+	type LogOutputChannel,
+	type QuickPickItem,
+	type Selection,
 	StatusBarAlignment,
-	StatusBarItem,
-	TextDocument,
-	TextEditorSelectionChangeEvent,
-	Uri,
-	WorkspaceConfiguration,
+	type StatusBarItem,
+	type TextDocument,
+	type TextEditorSelectionChangeEvent,
+	type Uri,
+	type WorkspaceConfiguration,
 	window,
 	workspace,
 } from "vscode";
-import {
+import type {
 	MatchRule,
 	RegExpRule,
 	StringRule,
-	type TConfigurationTarget,
+	TConfigurationTarget,
 } from "./configuration";
 import { setCopilotConfigState } from "./copilot";
-import { HScopesAPI } from "./hscopes";
+import type { HScopesAPI } from "./hscopes";
 import {
 	areRulesEquivalent,
 	convertOldRuleFormat,
@@ -87,8 +87,8 @@ export class Manager {
 	public static readonly extensionId =
 		`disable-copilot-comment-completions` as const;
 
-	private static _hscopes?: HScopesAPI;
-	private static _instance?: Manager;
+	private static _hscopes?: Promise<HScopesAPI>;
+	private static _instance?: Promise<Manager>;
 
 	public static async convertOldConfiguration() {
 		const typedConfig = workspace.getConfiguration(
@@ -135,27 +135,29 @@ export class Manager {
 
 	public static async getInstance(): Promise<Manager> {
 		// eslint-disable-next-line no-async-promise-executor
-		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
-		return (Manager._instance ??= await new Promise<Manager>(
-			async (resolve) => {
-				const hscopes = await Manager.getHScopes();
 
-				return resolve(
-					new Manager({
-						hscopes,
+		if (!Manager._instance) {
+			Manager._instance = new Promise<Manager>((resolve, reject) =>
+				Manager.getHScopes()
+					.then((hscopes) => resolve(new Manager({ hscopes })))
+					.catch((error) => {
+						window.showErrorMessage(`Failed to initialize Manager: ${error}`);
+						reject(error);
 					}),
-				);
-			},
-		));
+			);
+		}
+
+		return Manager._instance;
 	}
 
 	private createLogger = (fnName: string) => {
+		// biome-ignore lint/suspicious/noExplicitAny: Logging method
 		return (...args: any[]) => this.logMessage(fnName, ...args);
 	};
 
 	private static async getHScopes(): Promise<HScopesAPI> {
-		return (Manager._hscopes ??= await new Promise<HScopesAPI>(
-			(resolve, reject) => {
+		if (!Manager._hscopes) {
+			Manager._hscopes = new Promise<HScopesAPI>((resolve, reject) => {
 				const extension =
 					extensions.getExtension<HScopesAPI>(`draivin.hscopes`);
 				if (!extension) {
@@ -172,8 +174,10 @@ export class Manager {
 							.showErrorMessage(`Error loading 'draivin.hscopes': ${err}`)
 							.then(() => reject(err)),
 				);
-			},
-		));
+			});
+		}
+
+		return Manager._hscopes;
 	}
 
 	private constructor(opts: IManager) {
@@ -260,6 +264,7 @@ export class Manager {
 					delayMs <= 0 ||
 					now - prevSelectionFnCallTimestamp >= delayMs
 				) {
+					prevSelectionFnCallTimestamp = now;
 					return this.onDidChangeTextEditorSelection(event);
 				}
 			}, this),
@@ -543,7 +548,7 @@ export class Manager {
 	};
 
 	private resetCache() {
-		return (this.cache = {
+		this.cache = {
 			excludedGlobs: new Map(),
 			excludedScopes: new Map(),
 			textMateRules: this.configuration.textMateRules.map((rule) =>
@@ -566,7 +571,9 @@ export class Manager {
 					return predicate(text);
 				};
 			}),
-		});
+		};
+
+		return this.cache;
 	}
 
 	/**
@@ -641,6 +648,7 @@ export class Manager {
 		this.isExtensionDisablingCopilot = !state;
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: logging method
 	private logMessage(fnName: string, ...args: any[]) {
 		if (!this.configuration.debug) {
 			return;
@@ -648,7 +656,7 @@ export class Manager {
 
 		const strings = args.map((s) => (typeof s === "string" ? s : String(s)));
 		const outputMsg =
-			strings.length > 1 ? `\n\t${strings.join("\n\t")}` : strings[0]!;
+			strings.length > 1 ? `\n\t${strings.join("\n\t")}` : strings[0];
 		this.outputChannel.appendLine(`[${fnName}]: ${outputMsg}`);
 	}
 }
