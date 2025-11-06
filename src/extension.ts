@@ -250,8 +250,13 @@ export class Manager {
   private createStatusBarItem() {
     const statusBarItem = window.createStatusBarItem(`${this.extensionId}.statusBarItem`, StatusBarAlignment.Right)
     statusBarItem.name = `GH Copilot Suggestions`
-    statusBarItem.tooltip = `GH Copilot Suggestions Enabled`
-    statusBarItem.text = `$(check) Suggestions Enabled`
+    statusBarItem.command = {
+      command: `${this.extensionId}.toggle`,
+      title: `Toggle Suggestions Silencer`,
+      arguments: [],
+      tooltip: `Toggles the ${this.extensionId} extension on or off.`,
+    }
+    this.updateStatusBar(statusBarItem, 'EXTENSION_ENABLED')
     statusBarItem.show()
     return statusBarItem
   }
@@ -374,7 +379,10 @@ export class Manager {
   private readonly toggle = (): Thenable<void> => {
     this.logMessage(`Toggling extension active state via command. Current state: ${this.configuration.active}`)
     const currentState = this.configuration.active
-    return workspace.getConfiguration(this.extensionId).update(`active`, !currentState, ConfigurationTarget.Global)
+    const nextState = !currentState
+    return nextState
+      ? this.enable().then(() => this.updateStatusBar(this.statusBarItem, 'EXTENSION_ENABLED'))
+      : this.disable()
   }
 
   private readonly enable = () => {
@@ -384,7 +392,12 @@ export class Manager {
 
   private readonly disable = () => {
     this.logMessage(`Disabling extension via command.`)
-    return workspace.getConfiguration(this.extensionId).update(`active`, false, ConfigurationTarget.Global)
+    return workspace
+      .getConfiguration(this.extensionId)
+      .update(`active`, false, ConfigurationTarget.Global)
+      .then(() => {
+        this.updateStatusBar(this.statusBarItem, 'EXTENSION_DISABLED')
+      })
   }
 
   /**
@@ -413,8 +426,7 @@ export class Manager {
         `onDidChangeTextEditorSelection`,
         `Extension is inactive, skipping onDidChangeTextEditorSelection computation.`
       )
-      this.statusBarItem.tooltip = `GH Copilot Suggestions (Extension Inactive)`
-      this.statusBarItem.text = `Suggestions Toggling Inactive`
+      this.updateStatusBar(this.statusBarItem, 'EXTENSION_DISABLED')
       return
     }
 
@@ -489,6 +501,35 @@ export class Manager {
     return this.cache
   }
 
+  private updateStatusBar(
+    // EXTENSION_ENABLED: When the extension has been set to active but we have not yet otherwise determined the suggestions state
+    // EXTENSION_DISABLED: When the extension has been set to inactive (e.g. toggle command)
+    // SUGGESTIONS_ENABLED: When suggestions are currently enabled
+    // SUGGESTIONS_DISABLED: When suggestions are currently disabled
+    bar: StatusBarItem,
+    type: 'EXTENSION_DISABLED' | 'EXTENSION_ENABLED' | 'SUGGESTIONS_ENABLED' | 'SUGGESTIONS_DISABLED',
+    reason?: string
+  ) {
+    switch (type) {
+      case 'EXTENSION_DISABLED':
+        bar.tooltip = `GH Copilot Suggestions (Extension Inactive)`
+        bar.text = `Suggestions Toggling Inactive`
+        break
+      case 'EXTENSION_ENABLED':
+        bar.tooltip = `GH Copilot Suggestions (Extension Active)`
+        bar.text = `Waiting to determine suggestions state...`
+        break
+      case 'SUGGESTIONS_ENABLED':
+        bar.tooltip = `GH Copilot Suggestions Enabled`
+        bar.text = `$(check) Suggestions Enabled`
+        break
+      case 'SUGGESTIONS_DISABLED':
+        bar.tooltip = `GH Copilot Suggestions Disabled (reason: ${reason})`
+        bar.text = `$(x) Suggestions Disabled`
+        break
+    }
+  }
+
   /**
    * Utility Function that sets the VSCode Setting value of `github.copilot.editor.enableAutoCompletions` to
    * the specified state (and sets the `isExtensionDisablingCopilot` property accordingly).
@@ -504,16 +545,12 @@ export class Manager {
     const log = this.createLogger('updateCopilotState')
     if (!this.configuration.active) {
       log(`Extension is inactive, skipping updateCopilotState call.`)
-      this.statusBarItem.tooltip = `GH Copilot Suggestions (Extension Inactive)`
-      this.statusBarItem.text = `Suggestions Toggling Inactive`
+      this.updateStatusBar(this.statusBarItem, 'EXTENSION_DISABLED')
       return
     }
     log(`Setting Copilot Inline Suggestions to: ${state}, Reason: ${reason}`)
 
-    this.statusBarItem.tooltip = state
-      ? `GH Copilot Suggestions Enabled`
-      : `GH Copilot Suggestions Disabled (reason: ${reason})`
-    this.statusBarItem.text = state ? `$(check) Suggestions Enabled` : `$(x) Suggestions Disabled`
+    this.updateStatusBar(this.statusBarItem, state ? 'SUGGESTIONS_ENABLED' : 'SUGGESTIONS_DISABLED', reason)
 
     let target: ConfigurationTarget | null = null
     switch (this.configuration.configurationTarget) {
