@@ -88,7 +88,7 @@ export class Manager {
       }, [])
 
       if (textMateRules.length > 0) {
-        const newRules = [...Manager.configuration.textMateRules, ...textMateRules].reduce(
+        const newRules = [...this.configuration.textMateRules, ...textMateRules].reduce(
           (acc: MatchRule[], rule, index, array) => {
             const otherRules = array.slice(index + 1)
             if (!otherRules.some((otherRule) => areRulesEquivalent(rule, otherRule))) {
@@ -372,15 +372,18 @@ export class Manager {
   }
 
   private readonly toggle = (): Thenable<void> => {
+    this.logMessage(`Toggling extension active state via command. Current state: ${this.configuration.active}`)
     const currentState = this.configuration.active
     return workspace.getConfiguration(this.extensionId).update(`active`, !currentState, ConfigurationTarget.Global)
   }
 
   private readonly enable = () => {
+    this.logMessage(`Enabling extension via command.`)
     return workspace.getConfiguration(this.extensionId).update(`active`, true, ConfigurationTarget.Global)
   }
 
   private readonly disable = () => {
+    this.logMessage(`Disabling extension via command.`)
     return workspace.getConfiguration(this.extensionId).update(`active`, false, ConfigurationTarget.Global)
   }
 
@@ -404,6 +407,17 @@ export class Manager {
     const {
       textEditor: { document, selection },
     } = event
+
+    if (!this.configuration.active) {
+      this.logMessage(
+        `onDidChangeTextEditorSelection`,
+        `Extension is inactive, skipping onDidChangeTextEditorSelection computation.`
+      )
+      this.statusBarItem.tooltip = `GH Copilot Suggestions (Extension Inactive)`
+      this.statusBarItem.text = `Suggestions Toggling Inactive`
+      return
+    }
+
     // If the Document itself is excluded, disable Copilot if necessary and return early.
     if (this.isURIExcluded(document.uri)) {
       this.logMessage(
@@ -488,7 +502,7 @@ export class Manager {
     scope: ConfigurationScope | undefined | null
   ): Promise<void> {
     const log = this.createLogger('updateCopilotState')
-    if (!Manager.configuration.active) {
+    if (!this.configuration.active) {
       log(`Extension is inactive, skipping updateCopilotState call.`)
       this.statusBarItem.tooltip = `GH Copilot Suggestions (Extension Inactive)`
       this.statusBarItem.text = `Suggestions Toggling Inactive`
@@ -502,7 +516,7 @@ export class Manager {
     this.statusBarItem.text = state ? `$(check) Suggestions Enabled` : `$(x) Suggestions Disabled`
 
     let target: ConfigurationTarget | null = null
-    switch (Manager.configuration.configurationTarget) {
+    switch (this.configuration.configurationTarget) {
       case 'Global':
         target = ConfigurationTarget.Global
         await log(`Using configuration target: Global`)
@@ -535,7 +549,10 @@ export class Manager {
       thenables.push(commands.executeCommand(`editor.action.inlineSuggest.hide`))
     }
 
-    await Promise.all(thenables)
+    await Promise.all(thenables).catch((error) => {
+      log(`Error updating Copilot configuration: ${error}`)
+    })
+
     this.isExtensionDisablingCopilot = !state
   }
 
