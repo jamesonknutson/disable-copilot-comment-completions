@@ -42,7 +42,7 @@ Some example use cases / configurations include:
 - [Using a glob pattern rule to disable inline suggestions when editing commit messages](https://github.com/jamesonknutson/disable-copilot-comment-completions/issues/5)
 ```json
 {
-  "disable-copilot-comment-completions.globPatternRules": [
+  "disable-copilot-comment-completions.globPatterns": [
     "**/COMMIT_EDITMSG"
   ]
 }
@@ -105,7 +105,7 @@ For ease of use with TextMate Scopes, the extension provides an easy way to sele
 
 - `disable-copilot-comment-completions.eventProcessingThrottleDelayMs`: (Optional) A delay (in milliseconds) used as the minimum amount of time to wait between executions of the main logic of this extension. This extension uses some potentially expensive computations to determine if the cursor position is in an "excluded" region (namely the `textMateRules` setting, as the Extension has to re-tokenize the Document you're editing to figure out the Scopes at the cursor position). These expensive computations must be ran whenever the cursor position changes (e.g. typed a new letter, deleted a letter, navigated in any way inside the document, etc), and as such, this setting can be used to provide a minimum time to wait between re-running these expensive computations, so that the editor experience does not slow down to a crawl. **It is recommended that you leave this at the default setting of 500(ms)**, the throttle barely hurts the desired effects of this extension and greatly helps with performance.
 
-- `disable-copilot-comment-completions.globPatternRules`: (Optional) Array of glob patterns to match against the path of active file. If any of the globs defined here matches the active file, Inline Suggestions will be inhibited. Uses [multimatch](https://www.npmjs.com/package/multimatch) under the hood, so any valid multimatch pattern will work here. This setting can be used to instruct the extension to disable suggestions when the path of the open file in the active Text Editor matches a certain glob pattern.
+- `disable-copilot-comment-completions.globPatterns`: (Optional) Array of glob patterns to match against the path of active file. If any of the globs defined here matches the active file, Inline Suggestions will be inhibited. Uses [multimatch](https://www.npmjs.com/package/multimatch) under the hood, so any valid multimatch pattern will work here. This setting can be used to instruct the extension to disable suggestions when the path of the open file in the active Text Editor matches a certain glob pattern.
 
 - `disable-copilot-comment-completions.debug`: Boolean indicating whether or not the extension should log what it's doing to an output channel.
 
@@ -150,7 +150,7 @@ See CHANGELOG.md for more details.
 
 - Added new setting (`disable-copilot-comment-completions.contentRules`), these rules are matched against the Text Content at the Cursor Position
 
-- Added new setting (`disable-copilot-comment-completions.globPatternRules`), these rules are matched against the current Document's file path as Glob Patterns
+- Added new setting (`disable-copilot-comment-completions.globPatterns`), these rules are matched against the current Document's file path as Glob Patterns
 
 - Added new setting (`disable-copilot-comment-completions.debug`), when set to true the Extension will output some logging information to the VSCode Output View (titled `Disable Copilot Suggestions`)
 
